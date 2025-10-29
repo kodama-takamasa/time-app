@@ -719,34 +719,27 @@ body {
   color: var(--fg);
 }
 
-/* 再生中の時計音 - スイッチデザイン */
-.tick-sound-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.tick-sound-switch-wrapper {
+/* バイブレーション設定 - スイッチデザイン */
+.vibration-switch-wrapper {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.tick-sound-switch {
+.vibration-switch {
   position: relative;
   display: inline-block;
   width: 50px;
   height: 26px;
 }
 
-.tick-sound-switch input {
+.vibration-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.tick-sound-slider {
+.vibration-slider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -759,7 +752,7 @@ body {
   border: 1px solid var(--fg);
 }
 
-.tick-sound-slider:before {
+.vibration-slider:before {
   position: absolute;
   content: "";
   height: 18px;
@@ -771,19 +764,39 @@ body {
   border-radius: 50%;
 }
 
-.tick-sound-switch input:checked + .tick-sound-slider {
+.vibration-switch input:checked + .vibration-slider {
   background-color: var(--fg);
 }
 
-.tick-sound-switch input:checked + .tick-sound-slider:before {
+.vibration-switch input:checked + .vibration-slider:before {
   transform: translateX(24px);
   background-color: var(--bg);
 }
 
-.tick-sound-switch-label {
+.vibration-switch-label {
   font-size: 14px;
   color: var(--fg);
   font-weight: 500;
+}
+
+.design-card.light .vibration-slider {
+  border-color: #999;
+}
+
+.design-card.light .vibration-slider:before {
+  background-color: #999;
+}
+
+.design-card.light .vibration-switch input:checked + .vibration-slider {
+  background-color: #000;
+}
+
+.design-card.light .vibration-switch input:checked + .vibration-slider:before {
+  background-color: #fff;
+}
+
+.design-card.light .vibration-switch-label {
+  color: #111;
 }
 
 .tick-sound-options {

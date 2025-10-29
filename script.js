@@ -78,6 +78,8 @@ const AlarmSound = (() => {
   let lastPlayTime = 0;
   let volume = 0.5; // デフォルト音量
   let currentSoundType = "beep"; // 現在の音声種類
+  let vibrationEnabled = true; // バイブレーション有効フラグ
+  let silentModeWarningShown = false; // 消音モード警告表示済みフラグ
 
   // 音声種類の定義
   const SOUND_TYPES = {
@@ -348,6 +350,13 @@ const AlarmSound = (() => {
 
     console.log(`🔊 アラーム音を再生開始 (種類: ${currentSoundType})`);
 
+    // バイブレーション機能（スマホのみ）
+    if (vibrationEnabled && navigator.vibrate) {
+      // パターン: 振動200ms, 休止100ms, 振動200ms, 休止100ms, 振動300ms
+      navigator.vibrate([200, 100, 200, 100, 300]);
+      console.log("📳 バイブレーション実行");
+    }
+
     // 現在選択されている音声種類で再生
     const soundType = SOUND_TYPES[currentSoundType];
     if (soundType) {
@@ -359,6 +368,29 @@ const AlarmSound = (() => {
         isPlaying = false; // 再生完了後にフラグをリセット
         console.log("🔊 アラーム音再生完了");
       }, 2500); // すべての音に対応できる十分な時間を確保
+    }
+  };
+  
+  // 消音モードチェック（音声再生失敗時にアラート表示）
+  const checkSilentMode = () => {
+    // テスト音声を再生して消音モードをチェック
+    const testAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+    testAudio.volume = 0.1;
+    
+    const playPromise = testAudio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        testAudio.pause();
+        console.log("✅ 音声再生可能");
+      }).catch((error) => {
+        console.warn("⚠️ 音声再生エラー:", error);
+        
+        // 消音モード警告を表示（1回のみ）
+        if (!silentModeWarningShown && confirm("音声が再生できません。\n\nスマホが消音モードになっている可能性があります。\n消音モードを解除してください。\n\n（バイブレーション機能は引き続き動作します）")) {
+          silentModeWarningShown = true;
+        }
+      });
     }
   };
 
@@ -441,6 +473,19 @@ const AlarmSound = (() => {
     }
   };
 
+  // バイブレーション設定
+  const setVibration = (enabled) => {
+    vibrationEnabled = enabled;
+    console.log(`📳 バイブレーション: ${enabled ? "ON" : "OFF"}`);
+  };
+  
+  const getVibration = () => vibrationEnabled;
+  
+  // バイブレーション対応チェック
+  const isVibrationSupported = () => {
+    return "vibrate" in navigator;
+  };
+
   return {
     playAlarm,
     stopAlarm,
@@ -451,6 +496,10 @@ const AlarmSound = (() => {
     setSoundType,
     getSoundType,
     getSoundTypes,
+    checkSilentMode,
+    setVibration,
+    getVibration,
+    isVibrationSupported,
   };
 })();
 
@@ -2098,9 +2147,27 @@ const MinimalMode = (() => {
       // 画面の向きを横向きにロック（サポートされている場合）
       try {
         if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape").catch(() => {
-            console.log("画面の向きロックはサポートされていません");
+          await screen.orientation.lock("landscape").catch((err) => {
+            console.log("画面の向きロックはサポートされていません", err);
+            // ロックできない場合、ユーザーに画面を回転するよう促す
+            if (window.innerWidth < window.innerHeight) {
+              // 縦向きの場合のみメッセージ表示
+              setTimeout(() => {
+                if (isMinimalMode) {
+                  alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります");
+                }
+              }, 500);
+            }
           });
+        } else {
+          // screen.orientationがサポートされていない場合もメッセージ表示
+          if (window.innerWidth < window.innerHeight) {
+            setTimeout(() => {
+              if (isMinimalMode) {
+                alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります");
+              }
+            }, 500);
+          }
         }
       } catch (err) {
         console.log("画面の向きロックはサポートされていません", err);
@@ -4222,6 +4289,7 @@ const SoundSettings = (() => {
     return {
       volume: AlarmSound.getVolume(),
       soundType: AlarmSound.getSoundType(),
+      vibration: AlarmSound.getVibration(),
     };
   };
 
@@ -4240,6 +4308,14 @@ const SoundSettings = (() => {
     );
     if (soundTypeRadio) {
       soundTypeRadio.checked = true;
+    }
+    
+    // バイブレーション設定を適用
+    const vibrationToggle = document.getElementById("vibrationToggle");
+    const vibrationLabel = document.querySelector(".vibration-switch-label");
+    if (vibrationToggle && vibrationLabel) {
+      vibrationToggle.checked = snapshot.vibration;
+      vibrationLabel.textContent = snapshot.vibration ? "ON" : "OFF";
     }
   };
 
@@ -4273,9 +4349,17 @@ const SoundSettings = (() => {
     const soundType =
       document.querySelector('input[name="soundType"]:checked')?.value ||
       "beep";
+    const vibrationToggle = document.getElementById("vibrationToggle");
+    const vibration = vibrationToggle ? vibrationToggle.checked : true;
 
     AlarmSound.setVolume(volume);
     AlarmSound.setSoundType(soundType);
+    AlarmSound.setVibration(vibration);
+    
+    // 消音モードチェック（音量が0でない場合のみ）
+    if (volume > 0) {
+      AlarmSound.checkSilentMode();
+    }
 
     close();
   };
@@ -4344,6 +4428,31 @@ const SoundSettings = (() => {
       volumeDisplay.textContent = "無音";
     } else {
       volumeDisplay.textContent = `${Math.round(initialVolume * 100)}%`;
+    }
+    
+    // バイブレーション機能の表示（スマホのみ）
+    if (AlarmSound.isVibrationSupported()) {
+      const vibrationSection = document.getElementById("vibrationSection");
+      if (vibrationSection) {
+        vibrationSection.style.display = "block";
+        console.log("📳 バイブレーション機能が利用可能です");
+      }
+      
+      // バイブレーショントグルのイベントリスナー
+      const vibrationToggle = document.getElementById("vibrationToggle");
+      const vibrationLabel = document.querySelector(".vibration-switch-label");
+      
+      if (vibrationToggle && vibrationLabel) {
+        vibrationToggle.addEventListener("change", (e) => {
+          const enabled = e.target.checked;
+          vibrationLabel.textContent = enabled ? "ON" : "OFF";
+          
+          // テストバイブレーション
+          if (enabled && navigator.vibrate) {
+            navigator.vibrate(200);
+          }
+        });
+      }
     }
   };
 
