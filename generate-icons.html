@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PWAアイコン自動生成ツール</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+
+      .section {
+        margin-bottom: 30px;
+      }
+
+      .section h2 {
+        color: #555;
+        font-size: 18px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .icon-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .preview-item {
+        text-align: center;
+      }
+
+      .preview-canvas {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        max-width: 100%;
+        height: auto;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .preview-label {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .controls {
+        display: grid;
+        gap: 15px;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      label {
+        font-weight: 600;
+        color: #555;
+        font-size: 14px;
+      }
+
+      input[type="text"],
+      input[type="color"] {
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus,
+      input[type="color"]:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      input[type="color"] {
+        height: 50px;
+        cursor: pointer;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-top: 10px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .status {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        background: #f0f9ff;
+        border-left: 4px solid #0284c7;
+        color: #0c4a6e;
+        font-size: 14px;
+        display: none;
+      }
+
+      .status.show {
+        display: block;
+      }
+
+      .note {
+        background: #fffbeb;
+        border-left: 4px solid #f59e0b;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        font-size: 13px;
+        color: #78350f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>⏱️ PWAアイコン自動生成ツール</h1>
+      <p class="subtitle">タイマー&ストップウォッチアプリ用</p>
+
+      <div class="section">
+        <h2>🎨 プレビュー</h2>
+        <div class="icon-preview" id="preview"></div>
+      </div>
+
+      <div class="section">
+        <h2>⚙️ カスタマイズ</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label for="emoji">絵文字</label>
+            <input
+              type="text"
+              id="emoji"
+              value="⏱️"
+              maxlength="2"
+              placeholder="絵文字を入力"
+            />
+          </div>
+
+          <div class="control-group">
+            <label for="bgColor">背景色</label>
+            <input type="color" id="bgColor" value="#16213e" />
+          </div>
+
+          <button class="btn" id="generateBtn">
+            📥 全サイズのアイコンを生成してダウンロード
+          </button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="note">
+        <strong>📌 使い方：</strong><br />
+        1. 絵文字と背景色をお好みで変更<br />
+        2. 「生成してダウンロード」ボタンをクリック<br />
+        3. ダウンロードされた画像を <code>icons/</code> フォルダに保存<br />
+        4. 完了！アプリをデプロイしてインストール可能になります
+      </div>
+    </div>
+
+    <script>
+      const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+      const previewSizes = [72, 128, 192, 512];
+      const emojiInput = document.getElementById("emoji");
+      const bgColorInput = document.getElementById("bgColor");
+      const generateBtn = document.getElementById("generateBtn");
+      const preview = document.getElementById("preview");
+      const status = document.getElementById("status");
+
+      // プレビュー更新
+      function updatePreview() {
+        preview.innerHTML = "";
+        const emoji = emojiInput.value || "⏱️";
+        const bgColor = bgColorInput.value;
+
+        previewSizes.forEach((size) => {
+          const item = document.createElement("div");
+          item.className = "preview-item";
+
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          canvas.className = "preview-canvas";
+
+          const ctx = canvas.getContext("2d");
+
+          // 背景
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, size, size);
+
+          // 絵文字
+          ctx.font = `${size * 0.65}px Arial, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(emoji, size / 2, size / 2);
+
+          const label = document.createElement("div");
+          label.className = "preview-label";
+          label.textContent = `${size}×${size}px`;
+
+          item.appendChild(canvas);
+          item.appendChild(label);
+          preview.appendChild(item);
+        });
+      }
+
+      // アイコン生成とダウンロード
+      async function generateIcons() {
+        const emoji = emojiInput.value || "⏱️";
+        const bgColor = bgColorInput.value;
+
+        status.textContent = "生成中...";
+        status.className = "status show";
+
+        let completed = 0;
+
+        for (const size of sizes) {
+          await new Promise((resolve) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+
+            const ctx = canvas.getContext("2d");
+
+            // 背景
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, size, size);
+
+            // 絵文字
+            ctx.font = `${size * 0.65}px Arial, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(emoji, size / 2, size / 2);
+
+            // ダウンロード
+            canvas.toBlob((blob) => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `icon-${size}x${size}.png`;
+              a.click();
+              URL.revokeObjectURL(url);
+
+              completed++;
+              status.textContent = `生成中... ${completed}/${sizes.length}`;
+
+              setTimeout(resolve, 200); // ダウンロード間隔
+            });
+          });
+        }
+
+        status.textContent = `✅ ${sizes.length}個のアイコンを生成しました！ダウンロードフォルダを確認して、icons/フォルダに移動してください。`;
+      }
+
+      // イベントリスナー
+      emojiInput.addEventListener("input", updatePreview);
+      bgColorInput.addEventListener("input", updatePreview);
+      generateBtn.addEventListener("click", generateIcons);
+
+      // 初期プレビュー
+      updatePreview();
+    </script>
+  </body>
+</html>

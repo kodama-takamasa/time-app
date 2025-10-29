@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ストップウォッチ & タイマー</title>
+
+    <!-- PWA設定 -->
+    <meta name="description" content="高機能タイマー＆ストップウォッチアプリ" />
+    <meta name="theme-color" content="#16213e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="タイマー" />
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- アイコン設定 -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="./icons/icon-192x192.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="512x512"
+      href="./icons/icon-512x512.png"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @font-face {
+        font-family: "DSEG7";
+        src: url("https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2")
+          format("woff2");
+        font-weight: normal;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: "DSEG7";
+        src: url("https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2")
+          format("woff2");
+        font-weight: bold;
+        font-style: normal;
+      }
+    </style>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- モード切替 -->
+    <div class="mode-switch">
+      <button id="currentTimeMode" aria-pressed="false">
+        <div class="mode-icon">
+          <i class="fas fa-calendar"></i>
+        </div>
+        <div class="mode-label">現在<br />時刻</div>
+      </button>
+      <button class="active" id="timerMode" aria-pressed="true">
+        <div class="mode-icon">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="mode-label">タイマー</div>
+      </button>
+      <button id="stopwatchMode" aria-pressed="false">
+        <div class="mode-icon">
+          <i class="fas fa-stopwatch"></i>
+        </div>
+        <div class="mode-label">ストップ<br />ウォッチ</div>
+      </button>
+    </div>
+
+    <!-- メイン表示エリア -->
+    <div class="center-display">
+      <!-- 日付・曜日表示（現在時刻モード時のみ表示） -->
+      <div id="dateDisplay" class="date-display" style="display: none">
+        <div class="date-info">
+          <span id="dateText" class="date-text">12/25</span>
+          <span id="dayText" class="day-text">Mon</span>
+        </div>
+      </div>
+      <!-- サーキットメモ表示 -->
+      <div
+        id="circuitNoteDisplay"
+        class="circuit-note-display"
+        style="display: none"
+      >
+        <div class="circuit-note-content">
+          <span id="circuitNoteText" class="circuit-note-text"></span>
+        </div>
+      </div>
+      <div class="display-wrap">
+        <div id="display" class="seven" aria-live="polite"></div>
+      </div>
+      <!-- サーキット進行状況表示 -->
+      <div id="circuitProgress" class="circuit-progress" style="display: none">
+        <div class="circuit-info">
+          <span id="circuitTimeInfo" class="circuit-time-info"></span>
+          <span id="circuitStepInfo" class="circuit-step-info">Step 1/3</span>
+          <span id="circuitLoopInfo" class="circuit-loop-info"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- コントロールボタン -->
+    <div class="controls">
+      <button id="toggle" aria-label="開始">
+        <i class="fas fa-play"></i>
+      </button>
+      <button id="reset" aria-label="リセット">
+        <i class="fas fa-rotate-left"></i>
+      </button>
+    </div>
+
+    <!-- サイドメニュー -->
+    <aside class="side-menu" id="sideMenu">
+      <!-- タイマー用コンテンツ -->
+      <div id="timer-menu-content">
+        <span class="section-label">タイマー</span>
+        <div class="timer-options" id="timerOptions">
+          <button data-minutes="1">1分</button>
+          <button data-minutes="3">3分</button>
+          <button data-minutes="5">5分</button>
+          <button data-minutes="10" class="active">10分</button>
+          <button data-minutes="15">15分</button>
+          <button data-minutes="20">20分</button>
+          <button data-minutes="30">30分</button>
+          <button data-minutes="60">1時間</button>
+        </div>
+
+        <hr class="thick-sep" />
+
+        <!-- カスタム時間設定 -->
+        <div class="custom-time" id="customTime">
+          <label class="section-label">カスタム時間</label>
+          <div class="ct-row">
+            <div class="ct-field">
+              <span class="ct-suffix">時間</span>
+              <div class="num-wrap">
+                <input
+                  type="number"
+                  id="ctHours"
+                  min="0"
+                  value="0"
+                  inputmode="numeric"
+                  aria-label="時間"
+                />
+                <button
+                  class="step up"
+                  data-target="ctHours"
+                  aria-label="時間を増やす"
+                >
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button
+                  class="step down"
+                  data-target="ctHours"
+                  aria-label="時間を減らす"
+                >
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="ct-field">
+              <span class="ct-suffix">分</span>
+              <div class="num-wrap">
+                <input
+                  type="number"
+                  id="ctMinutes"
+                  min="0"
+                  max="59"
+                  value="0"
+                  inputmode="numeric"
+                  aria-label="分"
+                />
+                <button
+                  class="step up"
+                  data-target="ctMinutes"
+                  aria-label="分を増やす"
+                >
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button
+                  class="step down"
+                  data-target="ctMinutes"
+                  aria-label="分を減らす"
+                >
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="ct-field">
+              <span class="ct-suffix">秒</span>
+              <div class="num-wrap">
+                <input
+                  type="number"
+                  id="ctSeconds"
+                  min="0"
+                  max="59"
+                  value="0"
+                  inputmode="numeric"
+                  aria-label="秒"
+                />
+                <button
+                  class="step up"
+                  data-target="ctSeconds"
+                  aria-label="秒を増やす"
+                >
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button
+                  class="step down"
+                  data-target="ctSeconds"
+                  aria-label="秒を減らす"
+                >
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="btn custom-time-apply" id="ctApply">設定</button>
+        </div>
+
+        <hr class="thick-sep" />
+
+        <!-- サーキット設定 -->
+        <div class="circuit-section">
+          <label class="section-label">複数時間をセット</label>
+          <button id="openCircuit" class="btn circuit-open-btn">
+            サーキットを作成
+          </button>
+          <label class="history-label">履歴</label>
+          <div
+            id="savedCircuits"
+            class="saved-circuits"
+            aria-label="保存済みサーキット"
+          ></div>
+        </div>
+      </div>
+
+      <!-- アラーム用コンテンツ -->
+      <div id="alarm-menu-content" style="display: none">
+        <span class="section-label">アラーム設定</span>
+
+        <!-- アラーム繰り返し設定 -->
+        <div class="alarm-repeat-setting">
+          <label class="alarm-repeat-label">繰り返し</label>
+          <div class="alarm-repeat-options">
+            <label class="alarm-repeat-option">
+              <input
+                type="radio"
+                name="alarmRepeat"
+                value="once"
+                id="alarmOnce"
+              />
+              <span>1回限り</span>
+            </label>
+            <label class="alarm-repeat-option">
+              <input
+                type="radio"
+                name="alarmRepeat"
+                value="daily"
+                checked
+                id="alarmDaily"
+              />
+              <span>毎日</span>
+            </label>
+          </div>
+        </div>
+
+        <hr class="thick-sep" />
+
+        <!-- アラーム時刻設定 -->
+        <div class="custom-time" id="alarmTime">
+          <label class="section-label">アラーム時刻</label>
+          <div class="ct-row">
+            <div class="ct-field">
+              <span class="ct-suffix">時</span>
+              <div class="num-wrap">
+                <input
+                  type="number"
+                  id="alarmHours"
+                  min="0"
+                  max="23"
+                  value="7"
+                  inputmode="numeric"
+                  aria-label="時"
+                />
+                <button
+                  class="step up"
+                  data-target="alarmHours"
+                  aria-label="時を増やす"
+                >
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button
+                  class="step down"
+                  data-target="alarmHours"
+                  aria-label="時を減らす"
+                >
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="ct-field">
+              <span class="ct-suffix">分</span>
+              <div class="num-wrap">
+                <input
+                  type="number"
+                  id="alarmMinutes"
+                  min="0"
+                  max="59"
+                  value="0"
+                  inputmode="numeric"
+                  aria-label="分"
+                />
+                <button
+                  class="step up"
+                  data-target="alarmMinutes"
+                  aria-label="分を増やす"
+                >
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button
+                  class="step down"
+                  data-target="alarmMinutes"
+                  aria-label="分を減らす"
+                >
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="btn custom-time-apply" id="alarmSet">設定</button>
+        </div>
+
+        <hr class="thick-sep" />
+
+        <!-- アラームリスト -->
+        <div class="alarm-list-section">
+          <label class="section-label">設定済みアラーム</label>
+          <div id="alarmList" class="alarm-list"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- メニュー開閉ボタン -->
+    <button class="menu-toggle" id="openMenu" aria-label="メニューを開く">
+      <i class="fas fa-angle-double-left desktop-icon"></i>
+      <i class="fas fa-chevron-up mobile-icon" style="display: none"></i>
+    </button>
+
+    <!-- ミニマルモード切り替えボタン -->
+    <button
+      class="minimal-toggle"
+      id="minimalToggle"
+      aria-label="ミニマルモード切り替え"
+    >
+      <i class="fas fa-expand"></i>
+    </button>
+
+    <!-- サーキット作成モーダル -->
+    <div class="design-modal" id="circuitModal" aria-hidden="true">
+      <div
+        class="circuit-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="circuitTitle"
+      >
+        <h3 id="circuitTitle" class="circuit-title">サーキットを作成</h3>
+        <div class="circuit-grid">
+          <div class="circuit-left">
+            <div
+              class="circuit-drop"
+              id="circuitCanvas"
+              aria-label="ここにドラッグして追加"
+            ></div>
+            <div class="circuit-left-controls">
+              <button
+                class="circuit-reorder-btn"
+                id="circuitMoveUp"
+                aria-label="上に移動"
+              >
+                <i class="fas fa-chevron-up"></i>
+              </button>
+              <button
+                class="circuit-reorder-btn"
+                id="circuitMoveDown"
+                aria-label="下に移動"
+              >
+                <i class="fas fa-chevron-down"></i>
+              </button>
+            </div>
+          </div>
+          <div class="circuit-right">
+            <div class="circuit-right-content">
+              <div
+                class="circuit-list"
+                id="circuitPresetList"
+                aria-label="プリセット"
+              ></div>
+              <div class="circuit-custom-time">
+                <div class="circuit-ct-row">
+                  <div class="circuit-ct-field">
+                    <div class="num-wrap">
+                      <input
+                        type="number"
+                        id="circuitMinutes"
+                        min="0"
+                        max="59"
+                        value="0"
+                        aria-label="分"
+                      />
+                      <button
+                        class="step up"
+                        data-target="circuitMinutes"
+                        aria-label="分を増やす"
+                      >
+                        <i class="fas fa-chevron-up"></i>
+                      </button>
+                      <button
+                        class="step down"
+                        data-target="circuitMinutes"
+                        aria-label="分を減らす"
+                      >
+                        <i class="fas fa-chevron-down"></i>
+                      </button>
+                    </div>
+                    <span class="circuit-ct-label">分</span>
+                  </div>
+                  <div class="circuit-ct-field">
+                    <div class="num-wrap">
+                      <input
+                        type="number"
+                        id="circuitSeconds"
+                        min="0"
+                        max="59"
+                        value="0"
+                        aria-label="秒"
+                      />
+                      <button
+                        class="step up"
+                        data-target="circuitSeconds"
+                        aria-label="秒を増やす"
+                      >
+                        <i class="fas fa-chevron-up"></i>
+                      </button>
+                      <button
+                        class="step down"
+                        data-target="circuitSeconds"
+                        aria-label="秒を減らす"
+                      >
+                        <i class="fas fa-chevron-down"></i>
+                      </button>
+                    </div>
+                    <span class="circuit-ct-label">秒</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hint hint-wide">
+              右からドラッグ & ドロップで左に追加。<br />左欄内はドラッグで順番入れ替え可。
+            </div>
+            <div class="hint hint-narrow">
+              右の時間を押すと左に追加。<br />上下のボタンで順番入れ替え可。
+            </div>
+          </div>
+        </div>
+        <div class="circuit-loop-settings">
+          <label class="loop-label">ループ設定</label>
+          <div class="loop-content">
+            <div class="loop-options">
+              <label class="loop-option">
+                <input
+                  type="radio"
+                  name="loopMode"
+                  value="none"
+                  checked
+                  id="loopNone"
+                />
+                <span>ループなし</span>
+              </label>
+              <label class="loop-option">
+                <input
+                  type="radio"
+                  name="loopMode"
+                  value="infinite"
+                  id="loopInfinite"
+                />
+                <span>無限ループ</span>
+              </label>
+              <label class="loop-option">
+                <input
+                  type="radio"
+                  name="loopMode"
+                  value="count"
+                  id="loopCount"
+                />
+                <span>回数指定</span>
+              </label>
+            </div>
+            <div
+              class="loop-count-input"
+              id="loopCountInput"
+              style="display: none"
+            >
+              <label for="loopCountValue">ループ回数：</label>
+              <div class="ct-field">
+                <div class="num-wrap">
+                  <input
+                    type="number"
+                    id="loopCountValue"
+                    min="2"
+                    max="99"
+                    value="2"
+                    aria-label="ループ回数"
+                  />
+                  <button
+                    class="step up"
+                    data-target="loopCountValue"
+                    aria-label="回数を増やす"
+                  >
+                    <i class="fas fa-chevron-up"></i>
+                  </button>
+                  <button
+                    class="step down"
+                    data-target="loopCountValue"
+                    aria-label="回数を減らす"
+                  >
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                </div>
+                <span class="ct-suffix">回</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="circuit-actions">
+          <button class="btn" id="circuitClear">クリア</button>
+          <button class="btn primary" id="circuitCreate">作成</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- サーキット名入力モーダル -->
+    <div class="design-modal" id="circuitNameModal" aria-hidden="true">
+      <div
+        class="design-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="circuitNameTitle"
+      >
+        <h3 id="circuitNameTitle">サーキット名を入力</h3>
+        <input
+          id="circuitNameInput"
+          type="text"
+          class="circuit-name-input"
+          placeholder="例）10秒-15秒-10秒"
+          aria-label="サーキット名"
+        />
+        <div class="design-actions design-actions-end">
+          <button class="btn neutral" id="circuitNameOk">決定</button>
+          <button class="btn neutral" id="circuitNameBack">戻る</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ステップメモ入力モーダル -->
+    <div class="design-modal" id="stepNoteModal" aria-hidden="true">
+      <div
+        class="design-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="stepNoteTitle"
+      >
+        <h3 id="stepNoteTitle">ステップメモを入力</h3>
+        <textarea
+          id="stepNoteInput"
+          class="circuit-note-input"
+          placeholder="このステップの内容やメモを入力..."
+          rows="4"
+          aria-label="ステップメモ"
+        ></textarea>
+        <div class="design-actions design-actions-end">
+          <button class="btn primary" id="stepNoteOk">保存</button>
+          <button class="btn neutral" id="stepNoteCancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- デザイン設定FAB -->
+    <button class="design-fab" id="designFab" aria-label="デザイン設定">
+      <i class="fas fa-sliders-h"></i>
+    </button>
+
+    <!-- 音声設定FAB -->
+    <button class="sound-fab" id="soundFab" aria-label="音声設定">
+      <i class="fas fa-volume-up"></i>
+    </button>
+
+    <!-- デザイン設定モーダル -->
+    <div class="design-modal" id="designModal" aria-hidden="true">
+      <div
+        class="design-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="designTitle"
+      >
+        <h3 id="designTitle">デザイン設定</h3>
+        <div class="design-section">
+          <div class="design-section-title">表示サイズ</div>
+          <div class="design-row display-size-row">
+            <input
+              type="range"
+              id="dispScale"
+              min="0.3"
+              max="1.0"
+              step="0.01"
+              value="0.8"
+              aria-label="表示サイズ"
+              class="display-size-slider"
+            />
+          </div>
+        </div>
+        <div class="design-section">
+          <div class="design-section-title">デザイン</div>
+          <div class="design-row">
+            <label>背景</label>
+            <div class="bg-switch" id="bgSwitch">
+              <button class="btn neutral small" data-bg="dark">Black</button>
+              <button class="btn neutral small" data-bg="light">White</button>
+            </div>
+          </div>
+          <div class="design-row">
+            <label>カラー</label>
+            <div class="palette-list" id="paletteList"></div>
+          </div>
+        </div>
+        <div class="design-actions">
+          <button class="btn neutral" id="designApply">適用</button>
+          <button class="btn neutral" id="designCancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 音声設定モーダル -->
+    <div class="design-modal" id="soundModal" aria-hidden="true">
+      <div
+        class="design-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="soundTitle"
+      >
+        <h3 id="soundTitle">音声設定</h3>
+        <div class="design-section">
+          <div class="design-section-title">音声</div>
+          <div class="design-row">
+            <label>音量</label>
+            <span id="soundVolumeDisplay">100%</span>
+            <input
+              type="range"
+              id="soundVolumeSlider"
+              class="display-size-slider"
+              min="0"
+              max="1"
+              step="0.01"
+              value="1"
+              aria-label="音量調整"
+            />
+          </div>
+          <div class="design-row">
+            <div class="sound-type-list" id="soundModalTypeList"></div>
+          </div>
+        </div>
+        <div class="design-section">
+          <div class="design-section-title">再生中の時計音</div>
+          <div class="design-row">
+            <div class="tick-sound-container">
+              <div class="tick-sound-switch-wrapper">
+                <label class="tick-sound-switch">
+                  <input type="checkbox" id="tickSoundToggle" />
+                  <span class="tick-sound-slider"></span>
+                </label>
+                <span class="tick-sound-switch-label">OFF</span>
+              </div>
+              <div class="tick-sound-options" id="tickSoundOptions">
+                <div class="tick-sound-option" data-tick="pendulum">
+                  <span class="tick-sound-option-name">振り子時計</span>
+                  <button
+                    class="sound-test-btn"
+                    data-tick-test="pendulum"
+                    title="音声テスト"
+                  >
+                    <i class="fas fa-volume-up"></i>
+                  </button>
+                </div>
+                <div class="tick-sound-option" data-tick="timer">
+                  <span class="tick-sound-option-name">タイマー音</span>
+                  <button
+                    class="sound-test-btn"
+                    data-tick-test="timer"
+                    title="音声テスト"
+                  >
+                    <i class="fas fa-volume-up"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="design-actions">
+          <button class="btn neutral" id="soundApply">適用</button>
+          <button class="btn neutral" id="soundCancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- タイマー終了アラートモーダル -->
+    <div class="alert-modal" id="alertModal" aria-hidden="true">
+      <div class="alert-card">
+        <div class="alert-icon">
+          <div class="digital-clock">
+            <div class="clock-face">
+              <div class="clock-digits">00:00</div>
+              <div class="clock-pulse"></div>
+            </div>
+          </div>
+        </div>
+        <div class="alert-title">タイマー終了！</div>
+        <div class="alert-message" id="alertMessage">時間が経過しました</div>
+        <button class="alert-button" id="alertClose">OK</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- Service Worker 登録 -->
+    <script>
+      // PWA: Service Worker の登録
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./service-worker.js")
+            .then((registration) => {
+              console.log("✅ Service Worker 登録成功:", registration.scope);
+
+              // 更新チェック
+              registration.addEventListener("updatefound", () => {
+                const newWorker = registration.installing;
+                console.log("🔄 新しいバージョンを検出");
+
+                newWorker.addEventListener("statechange", () => {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    // 新しいバージョンが利用可能
+                    if (
+                      confirm("新しいバージョンが利用可能です。更新しますか？")
+                    ) {
+                      newWorker.postMessage({ type: "SKIP_WAITING" });
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch((error) => {
+              console.error("❌ Service Worker 登録失敗:", error);
+            });
+        });
+
+        // Service Worker が更新されたらリロード
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      } else {
+        console.warn("⚠️ このブラウザは Service Worker に対応していません");
+      }
+
+      // PWA: インストールプロンプト
+      let deferredPrompt;
+      window.addEventListener("beforeinstallprompt", (e) => {
+        // デフォルトのインストールプロンプトを防止
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log("📲 アプリのインストールが可能です");
+
+        // 必要に応じてインストールボタンを表示する処理をここに追加
+        // 例: showInstallButton();
+      });
+
+      // インストール完了時
+      window.addEventListener("appinstalled", () => {
+        console.log("✅ アプリがインストールされました");
+        deferredPrompt = null;
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,3944 @@
+:root {
+  --bg: #000;
+  --panel: #000;
+  --fg: #00ff00;
+  --fg-dim: rgba(0, 0, 0, 0);
+  --glow: 0 0 5px #00ff00;
+  --menu-bg: #111;
+  --fg-r: 0;
+  --fg-g: 255;
+  --fg-b: 0;
+  --seg-w: 12;
+  --disp-scale: 0.8;
+  --ui-accent: #ff8c3a; /* 中立アクセント（FABなどに使用） */
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  overflow: hidden;
+  font-weight: 600;
+}
+
+.mode-switch {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+  position: relative;
+  z-index: 10;
+}
+.mode-switch button {
+  background: none;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  padding: 8px 12px;
+  font-size: 1em;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.25s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 80px; /* 横幅を統一 */
+  height: 75px; /* 2行表示に対応して高さを少し増加 */
+  box-sizing: border-box; /* パディングを含めてサイズ計算 */
+}
+.mode-switch button.active {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 5px var(--fg);
+}
+
+/* モード切り替えのアイコンとラベル */
+.mode-icon {
+  font-size: 1.5em; /* アイコンを適切なサイズに */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em; /* アイコンの幅を固定 */
+  height: 1.5em; /* アイコンの高さを固定 */
+  flex-shrink: 0; /* アイコンサイズを固定 */
+}
+.mode-label {
+  font-size: 0.65em; /* ラベルを小さく */
+  font-weight: 500;
+  line-height: 1.1; /* 2行表示に対応 */
+  text-align: center; /* 中央揃え */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.2em; /* 1行と2行の文字の高さを統一 */
+  max-height: 2.2em; /* 最大高さを制限 */
+  flex: 1; /* 残りのスペースを占有 */
+  overflow: hidden; /* はみ出しを防ぐ */
+}
+
+.center-display {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 日付・曜日表示 */
+.date-display {
+  margin-bottom: 20px;
+  pointer-events: none;
+}
+
+/* サーキットメモ表示 */
+.circuit-note-display {
+  margin-bottom: 15px;
+  pointer-events: none;
+}
+
+.circuit-note-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: var(--fg);
+  border-radius: 8px;
+  max-width: 600px;
+}
+
+.circuit-note-text {
+  font-family: "Orbitron", "Courier New", monospace;
+  font-size: 0.95rem;
+  color: var(--bg);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .circuit-note-content {
+    padding: 8px 16px;
+    max-width: 90vw;
+  }
+
+  .circuit-note-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .circuit-note-content {
+    padding: 6px 12px;
+  }
+
+  .circuit-note-text {
+    font-size: 0.75rem;
+  }
+}
+
+/* サーキット進行状況表示 */
+.circuit-progress {
+  margin-top: 20px;
+  pointer-events: none;
+}
+
+.circuit-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+  border-radius: 8px;
+  border: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+  box-shadow: 0 0 15px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+}
+
+.circuit-time-info,
+.circuit-step-info,
+.circuit-loop-info {
+  font-family: "Orbitron", "Courier New", monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+  text-rendering: geometricPrecision;
+}
+
+.circuit-time-info {
+  padding-right: 12px;
+  border-right: 2px solid var(--fg);
+  opacity: 0.95;
+}
+
+.circuit-time-info:empty {
+  display: none;
+}
+
+.circuit-loop-info {
+  padding-left: 12px;
+  border-left: 2px solid var(--fg);
+  opacity: 0.9;
+}
+
+.circuit-loop-info:empty {
+  display: none;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+  .circuit-info {
+    gap: 10px;
+    padding: 6px 14px;
+  }
+
+  .circuit-time-info,
+  .circuit-step-info,
+  .circuit-loop-info {
+    font-size: 0.9rem;
+  }
+
+  .circuit-time-info {
+    padding-right: 10px;
+  }
+
+  .circuit-loop-info {
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .circuit-info {
+    gap: 8px;
+    padding: 5px 12px;
+  }
+
+  .circuit-time-info,
+  .circuit-step-info,
+  .circuit-loop-info {
+    font-size: 0.8rem;
+  }
+
+  .circuit-time-info {
+    padding-right: 8px;
+  }
+
+  .circuit-loop-info {
+    padding-left: 8px;
+  }
+}
+
+.date-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  background: var(--fg);
+  border-radius: 10px;
+  box-shadow: 0 0 5px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.7),
+    0 0 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+  position: relative;
+  border: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+}
+
+.date-info::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.02) 50%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  border-radius: 9px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.date-text,
+.day-text {
+  font-weight: bold;
+  letter-spacing: 0.25em;
+  color: var(--bg);
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.date-text {
+  font-family: "DSEG7", "Courier New", monospace;
+  font-size: 1.75rem;
+  filter: brightness(1.2) contrast(1.4) saturate(1.1);
+  text-indent: 0.25em;
+}
+
+.day-text {
+  font-family: "Orbitron", "Courier New", monospace;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  padding-left: 16px;
+  border-left: 3px solid var(--bg);
+  opacity: 0.98;
+  text-indent: 0;
+  letter-spacing: 0.15em;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+  .date-info {
+    gap: 14px;
+    padding: 9px;
+  }
+
+  .date-text {
+    font-size: 1.5rem;
+    text-indent: 0.22em;
+  }
+
+  .day-text {
+    font-size: 1.5rem;
+    padding-left: 14px;
+    border-left-width: 2.5px;
+    letter-spacing: 0.12em;
+  }
+}
+
+@media (max-width: 480px) {
+  .date-info {
+    gap: 12px;
+    padding: 8px;
+  }
+
+  .date-text {
+    font-size: 1.25rem;
+    text-indent: 0.2em;
+  }
+
+  .day-text {
+    font-size: 1rem;
+    padding-left: 12px;
+    border-left-width: 2px;
+    letter-spacing: 0.1em;
+  }
+}
+
+.display-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(20px + (10px * var(--disp-scale)));
+}
+
+.seven {
+  display: flex;
+  align-items: center;
+  width: calc(var(--disp-scale) * 100vw);
+  max-width: min(
+    calc(var(--disp-scale) * 100vw),
+    95vw
+  ); /* タイマー表示に合わせて95vwに統一 */
+  justify-content: center;
+}
+
+/* 00:00形式（4桁）の場合は横幅いっぱいに表示 */
+#display.seven:not(:has(.colon:nth-child(6))) {
+  max-width: 100vw !important; /* 横幅いっぱいに表示 */
+}
+
+#display.seven:not(:has(.colon:nth-child(6))) .digit {
+  max-width: calc(
+    var(--disp-scale) * 28vw
+  ) !important; /* 00:00形式用により拡大 */
+  max-height: min(
+    calc(var(--disp-scale) * 48vw),
+    calc(9vw + (var(--disp-scale) - 0.3) * 40vw)
+  ) !important; /* 00:00形式用により拡大 */
+}
+
+#display.seven:not(:has(.colon:nth-child(6))) .colon {
+  max-width: min(
+    calc(var(--disp-scale) * 7.5vw),
+    calc(1.8vw + (var(--disp-scale) - 0.3) * 8vw)
+  ) !important; /* 00:00形式用により拡大 */
+  max-height: min(
+    calc(var(--disp-scale) * 48vw),
+    calc(9vw + (var(--disp-scale) - 0.3) * 40vw)
+  ) !important; /* 00:00形式用により拡大 */
+}
+
+#display.seven:not(:has(.colon:nth-child(6))) .dot {
+  max-width: min(
+    calc(var(--disp-scale) * 4vw),
+    calc(1.2vw + (var(--disp-scale) - 0.3) * 4vw)
+  ) !important; /* 00:00形式用により拡大 */
+  max-height: min(
+    calc(var(--disp-scale) * 4vw),
+    calc(1.2vw + (var(--disp-scale) - 0.3) * 4vw)
+  ) !important; /* 00:00形式用により拡大 */
+}
+
+/* 00:00:00形式（6桁）の場合は横幅いっぱいに表示 */
+#display.seven:has(.colon:nth-child(6)) {
+  max-width: 100vw !important; /* 横幅いっぱいに表示 */
+}
+
+#display.seven:has(.colon:nth-child(6)) .digit {
+  max-width: calc(
+    var(--disp-scale) * 28vw
+  ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+  max-height: min(
+    calc(var(--disp-scale) * 28vw),
+    calc(5.5vw + (var(--disp-scale) - 0.3) * 32vw)
+  ) !important; /* 00:00:00形式を小さくしてはみ出しを防ぐ */
+  width: calc(var(--disp-scale) * 15vw);
+}
+
+#display.seven:has(.colon:nth-child(6)) .colon {
+  max-width: min(
+    calc(var(--disp-scale) * 7.5vw),
+    calc(1.8vw + (var(--disp-scale) - 0.3) * 8vw)
+  ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+  max-height: min(
+    calc(var(--disp-scale) * 28vw),
+    calc(5.5vw + (var(--disp-scale) - 0.3) * 24vw)
+  ) !important; /* 00:00:00形式を小さくしてはみ出しを防ぐ */
+}
+
+#display.seven:has(.colon:nth-child(6)) .dot {
+  max-width: min(
+    calc(var(--disp-scale) * 4vw),
+    calc(1.2vw + (var(--disp-scale) - 0.3) * 4vw)
+  ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+  max-height: min(
+    calc(var(--disp-scale) * 4vw),
+    calc(1.2vw + (var(--disp-scale) - 0.3) * 4vw)
+  ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+}
+
+.digit {
+  width: calc(var(--disp-scale) * 19vw);
+  height: calc(var(--disp-scale) * 30.5vw);
+  flex-shrink: 0;
+  max-width: min(
+    calc(var(--disp-scale) * 17vw),
+    calc(4vw + (var(--disp-scale) - 0.3) * 11vw)
+  ); /* 0.3=4vw, 0.8=9.5vw, 1.0=11.7vw の線形補間 */
+  max-height: min(
+    calc(var(--disp-scale) * 30.5vw),
+    calc(6vw + (var(--disp-scale) - 0.3) * 19vw)
+  ); /* 0.3=6vw, 0.8=19.5vw, 1.0=20.3vw の線形補間 */
+}
+.digit svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.seg {
+  fill: var(--fg-dim);
+  transition: fill 0.15s, filter 0.2s;
+}
+.on {
+  fill: var(--fg);
+  filter: drop-shadow(var(--glow));
+}
+.colon {
+  width: calc(var(--disp-scale) * 4.5vw);
+  height: calc(var(--disp-scale) * 30.5vw);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(var(--disp-scale) * 6.5vw) 0;
+  flex-shrink: 0;
+  max-width: min(
+    calc(var(--disp-scale) * 4.5vw),
+    calc(1vw + (var(--disp-scale) - 0.3) * 3vw)
+  ); /* 0.3=1vw, 0.8=2.5vw, 1.0=3.1vw の線形補間 */
+  max-height: min(
+    calc(var(--disp-scale) * 30.5vw),
+    calc(6vw + (var(--disp-scale) - 0.3) * 19vw)
+  ); /* 0.3=6vw, 0.8=19.5vw, 1.0=20.3vw の線形補間 */
+}
+.dot {
+  width: calc(var(--disp-scale) * 2.5vw);
+  height: calc(var(--disp-scale) * 2.5vw);
+  border-radius: 50%;
+  background: var(--fg-dim);
+  margin: 0 auto;
+  max-width: min(
+    calc(var(--disp-scale) * 2.5vw),
+    calc(0.6vw + (var(--disp-scale) - 0.3) * 1.8vw)
+  ); /* 0.3=0.6vw, 0.8=1.5vw, 1.0=1.86vw の線形補間 */
+  max-height: min(
+    calc(var(--disp-scale) * 2.5vw),
+    calc(0.6vw + (var(--disp-scale) - 0.3) * 1.8vw)
+  ); /* 0.3=0.6vw, 0.8=1.5vw, 1.0=1.86vw の線形補間 */
+}
+.dot.on {
+  background: var(--fg);
+  filter: drop-shadow(var(--glow));
+}
+
+.controls {
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: var(--panel);
+  z-index: 10;
+}
+.controls button {
+  background: none;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  font-size: 2em;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.controls button:hover,
+.controls button.active {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 5px var(--fg);
+}
+
+.design-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--fg); /* ← テーマ色に同期 */
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: saturate(120%) blur(2px);
+  color: var(--fg); /* ← テーマ色に同期 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
+    0 0 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.25);
+  transition: 0.25s;
+  pointer-events: auto;
+  /* クリック判定エリアを確保 */
+  min-width: 48px;
+  min-height: 48px;
+  /* タッチデバイスでのクリック判定を改善 */
+  touch-action: manipulation;
+}
+.design-fab:hover {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 14px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.7);
+}
+
+.sound-fab {
+  position: fixed;
+  right: 72px;
+  bottom: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--fg);
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: saturate(120%) blur(2px);
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35),
+    0 0 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.25);
+  transition: 0.25s;
+  pointer-events: auto;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
+}
+.sound-fab:hover {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 14px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.7);
+}
+
+/* デザイン設定モーダルの表示サイズスライダー */
+.display-size-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  width: 100%;
+  margin: 0;
+}
+
+.display-size-slider {
+  width: 100%;
+  height: 12px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.display-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: var(--fg);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: 0.2s;
+}
+
+.display-size-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.display-size-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: var(--fg);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: 0.2s;
+}
+
+.display-size-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.display-size-slider::-moz-range-track {
+  height: 12px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border-radius: 6px;
+  border: none;
+}
+
+/* 音声設定モーダルのスタイル */
+#soundModal .sound-type-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+#soundModal .sound-type-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border: 1px solid var(--fg);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: 0.2s;
+}
+
+#soundModal .sound-type-item:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+}
+
+#soundModal .sound-type-item input[type="radio"] {
+  margin-right: 8px;
+}
+
+#soundModal .sound-type-item label {
+  flex: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+#soundModal .sound-name {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+/* 再生中の時計音 - スイッチデザイン */
+.tick-sound-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tick-sound-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tick-sound-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.tick-sound-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tick-sound-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  transition: 0.3s;
+  border-radius: 26px;
+  border: 1px solid var(--fg);
+}
+
+.tick-sound-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--fg);
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.tick-sound-switch input:checked + .tick-sound-slider {
+  background-color: var(--fg);
+}
+
+.tick-sound-switch input:checked + .tick-sound-slider:before {
+  transform: translateX(24px);
+  background-color: var(--bg);
+}
+
+.tick-sound-switch-label {
+  font-size: 14px;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.tick-sound-options {
+  display: flex;
+  gap: 8px;
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.tick-sound-options.enabled {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tick-sound-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--fg);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.tick-sound-option:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+}
+
+.tick-sound-option.active {
+  background: var(--fg);
+}
+
+.tick-sound-option.active .tick-sound-option-name {
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.tick-sound-option-name {
+  font-size: 14px;
+  color: var(--fg);
+  flex: 1;
+}
+
+#soundModal .sound-test-btn {
+  background: none;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#soundModal .sound-test-btn:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+#soundModal .sound-test-btn i {
+  font-size: 12px;
+}
+
+/* 音量スライダーの幅を音声種類と同じに調整 */
+#soundModal .design-row:has(input[type="range"]) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#soundModal .design-row:has(input[type="range"]) input[type="range"] {
+  width: 100%;
+  min-width: 280px;
+}
+
+/* レスポンシブ対応：常に2列グリッド表示を維持 */
+@media (max-width: 480px) {
+  #soundModal .sound-type-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  #soundModal .sound-type-item {
+    padding: 10px 6px;
+    font-size: 0.85em;
+  }
+
+  .tick-sound-option {
+    padding: 8px 10px;
+  }
+
+  .tick-sound-option-name {
+    font-size: 13px;
+  }
+
+  #soundModal .design-row:has(input[type="range"]) input[type="range"] {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 360px) {
+  #soundModal .sound-type-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+
+  #soundModal .sound-type-item {
+    padding: 8px 4px;
+    font-size: 0.8em;
+  }
+
+  .tick-sound-option {
+    padding: 6px 8px;
+  }
+
+  .tick-sound-option-name {
+    font-size: 12px;
+  }
+
+  #soundModal .design-row:has(input[type="range"]) input[type="range"] {
+    min-width: 200px;
+  }
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  right: -220px;
+  width: 200px;
+  height: 100%;
+  background: var(--panel);
+  border-left: 2px solid var(--fg);
+  padding: 56px 8px 8px;
+  box-shadow: -2px 0 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  transition: right 0.3s, bottom 0.3s, height 0.3s;
+  z-index: 1000;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* スクロールバーの幅を考慮したパディング調整 */
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+.side-menu.open {
+  right: 0;
+}
+.menu-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: var(--menu-bg, #111);
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  font-size: 1.2em;
+  padding: 10px;
+  border-radius: 10px 0 0 10px;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 0 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  transition: all 0.3s ease;
+}
+
+.menu-toggle:hover {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.side-menu.open + .menu-toggle {
+  right: 200px; /* side-menu の width と同値（index参照） */
+  border-radius: 0 10px 10px 0; /* 左端に張り付くので角丸を反転 */
+}
+
+/* ミニマルモード切り替えボタン */
+.minimal-toggle {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(
+    var(--menu-bg-r, 17),
+    var(--menu-bg-g, 17),
+    var(--menu-bg-b, 17),
+    0.3
+  );
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5);
+  font-size: 1.1em;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1001;
+  box-shadow: 0 0 5px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.minimal-toggle:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+  color: var(--bg);
+  border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8);
+  box-shadow: 0 0 8px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  transform: scale(1.02);
+}
+
+/* ストップウォッチモードではメニューボタンを非表示 */
+body.stopwatch-mode .menu-toggle {
+  display: none !important;
+}
+
+/* ストップウォッチモードでは音声設定ボタンを非表示 */
+body.stopwatch-mode .sound-fab {
+  display: none !important;
+}
+
+/* ミニマルモード時の表示制御 */
+body.minimal-mode .mode-switch {
+  display: none !important;
+}
+
+body.minimal-mode .menu-toggle {
+  display: none !important;
+}
+
+body.minimal-mode .side-menu {
+  display: none !important;
+}
+
+body.minimal-mode .design-fab {
+  display: none !important;
+}
+
+body.minimal-mode .sound-fab {
+  display: none !important;
+}
+
+body.minimal-mode .controls {
+  display: none !important;
+}
+
+body.minimal-mode .minimal-toggle {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.7) !important;
+  color: var(--bg) !important;
+  border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
+}
+
+/* ミニマルモード時のアイコン回転は不要（アイコン自体を変更するため） */
+
+/* レスポンシブ対応：狭い画面では下から上に開くメニュー */
+@media (max-width: 768px) {
+  .side-menu {
+    top: auto !important;
+    bottom: -100% !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-left: none !important;
+    border-top: 2px solid var(--fg) !important;
+    padding: 20px 16px 16px !important;
+    box-shadow: 0 -2px 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3) !important;
+    transition: bottom 0.3s !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    text-align: center !important;
+    margin: 0 !important;
+    max-width: none !important;
+    overflow-y: auto !important;
+  }
+
+  .side-menu.open {
+    bottom: 0 !important;
+    right: 0 !important;
+    padding-bottom: 60px !important; /* メニューボタンの高さ分のスペースを追加 */
+  }
+
+  /* メニューが開いている時の背景オーバーレイ */
+  .side-menu.open::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+
+  .menu-toggle {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    border-radius: 25px 25px 0 0 !important;
+    width: 60px !important; /* 80px → 60px に縮小 */
+    height: 40px !important; /* 50px → 40px に縮小 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important; /* 18px → 16px に縮小 */
+    background: var(--menu-bg, #111) !important;
+    border: 2px solid var(--fg) !important;
+    border-bottom: none !important;
+    color: var(--fg) !important;
+    box-shadow: 0 0 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3) !important;
+    transition: all 0.3s ease !important;
+  }
+
+  .side-menu.open + .menu-toggle {
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    border-radius: 25px 25px 0 0;
+    box-shadow: 0 0 15px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5);
+  }
+
+  .menu-toggle:hover {
+    background: var(--fg);
+    color: var(--bg);
+    box-shadow: 0 0 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+    transform: translateX(-50%) translateY(-2px) scale(1.05);
+  }
+
+  /* モバイルでは上下矢印を表示、デスクトップ矢印を非表示 */
+  .desktop-icon {
+    display: none;
+  }
+
+  .mobile-icon {
+    display: inline-block !important;
+  }
+
+  /* ミニマルモード切り替えボタンのレスポンシブ対応 */
+  .minimal-toggle {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1em !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    padding: 6px !important;
+    border-radius: 6px !important;
+  }
+
+  /* モバイルメニュー内のコンテンツスタイル */
+  .side-menu .section-label {
+    font-size: 1.2em;
+    margin: 15px 0 10px 0;
+  }
+
+  .side-menu .timer-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 90vw;
+  }
+
+  .side-menu .timer-options button {
+    padding: 12px 8px;
+    font-size: 0.9em;
+  }
+
+  .side-menu .custom-time {
+    width: 100%;
+    max-width: 100vw;
+    margin-top: 20px;
+  }
+
+  .side-menu .ct-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+    width: 100%;
+  }
+
+  .side-menu .ct-field {
+    flex: 1;
+    width: 100%;
+  }
+
+  .side-menu .num-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .side-menu .num-wrap input {
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  /* カスタム時間適用ボタンの下部マージン */
+  .side-menu .custom-time-apply {
+    margin-bottom: 20px;
+  }
+
+  /* コントロールボタンのレスポンシブ対応 */
+  .controls {
+    position: fixed !important;
+    bottom: 80px !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    background: var(--panel) !important;
+    border-radius: 0 !important;
+    padding: 12px 24px !important;
+    border-bottom: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2) !important;
+  }
+}
+
+/* より狭い画面（スマートフォン）用の調整 */
+@media (max-width: 480px) {
+  .side-menu {
+    height: 100vh !important;
+    width: 100vw !important;
+    padding: 16px 12px 12px !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  .menu-toggle {
+    width: 55px !important; /* 70px → 55px に縮小 */
+    height: 35px !important; /* 45px → 35px に縮小 */
+    font-size: 14px !important; /* 16px → 14px に縮小 */
+    bottom: 0 !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    border-radius: 20px 20px 0 0 !important; /* 22px → 20px に縮小 */
+    background: var(--menu-bg, #111) !important;
+    border: 2px solid var(--fg) !important;
+    border-bottom: none !important;
+    color: var(--fg) !important;
+    box-shadow: 0 0 8px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3) !important;
+    transition: all 0.3s ease !important;
+  }
+
+  .side-menu.open {
+    padding-bottom: 50px !important; /* 480px以下のメニューボタンの高さ分のスペースを追加 */
+  }
+
+  .side-menu.open + .menu-toggle {
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    border-radius: 20px 20px 0 0; /* 22px → 20px に縮小 */
+    box-shadow: 0 0 12px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5);
+  }
+
+  .menu-toggle:hover {
+    background: var(--fg);
+    color: var(--bg);
+    box-shadow: 0 0 15px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+    transform: translateX(-50%) translateY(-2px) scale(1.05);
+  }
+
+  /* スマートフォン用のコンテンツスタイル */
+  .side-menu .timer-options {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    max-width: 95vw;
+  }
+
+  .side-menu .custom-time {
+    max-width: 100vw;
+    width: 100%;
+  }
+
+  .side-menu .ct-row {
+    gap: 6px;
+    width: 100%;
+  }
+
+  .side-menu .ct-field {
+    flex: 1;
+    width: 100%;
+  }
+
+  .side-menu .num-wrap {
+    width: 100%;
+  }
+
+  .side-menu .num-wrap input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .side-menu .timer-options button {
+    padding: 10px 6px;
+    font-size: 0.8em;
+  }
+
+  /* カスタム時間適用ボタンの下部マージン */
+  .side-menu .custom-time-apply {
+    margin-bottom: 15px;
+  }
+
+  /* ミニマルモード切り替えボタンの極小画面対応 */
+  .minimal-toggle {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9em !important;
+    bottom: 10px !important;
+    left: 10px !important;
+    padding: 5px !important;
+    border-radius: 5px !important;
+  }
+
+  /* コントロールボタンの極小画面対応 */
+  .controls {
+    position: fixed !important;
+    bottom: 70px !important;
+    left: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    background: var(--panel) !important;
+    border-radius: 0 !important;
+    padding: 10px 20px !important;
+    border-bottom: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2) !important;
+  }
+}
+
+.section-label {
+  display: block;
+  margin: 10px 0 6px 0;
+  font-weight: 700;
+}
+.thick-sep {
+  border: 0;
+  border-top: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+  margin: 10px 0;
+}
+
+.timer-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.timer-options button {
+  background: none;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  padding: 10px;
+  font-size: 1em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 700;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.timer-options button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--fg);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.timer-options button:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+  border-color: var(--fg);
+  transform: translateX(2px);
+  color: var(--fg);
+}
+.timer-options button:hover::before {
+  opacity: 1;
+}
+.timer-options button:active {
+  transform: translateX(2px) scale(0.98);
+}
+.timer-options button.active {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--fg);
+}
+
+.custom-time {
+  margin-top: 6px;
+  color: var(--fg);
+  width: 100%;
+}
+.custom-time .ct-row {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  align-items: center;
+  /* スクロールバー表示時の余白確保 */
+  margin-right: 2px;
+}
+.custom-time .ct-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.custom-time .ct-suffix {
+  font-size: 0.85em;
+  font-weight: 700;
+  opacity: 0.85;
+  line-height: 1;
+}
+.custom-time input {
+  width: 100%;
+  background: transparent;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  padding: 8px 34px 8px 8px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  /* スクロールバー表示時の幅調整 */
+  box-sizing: border-box;
+  min-width: 0;
+}
+.custom-time input:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--fg);
+  border-width: 2.5px;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  display: none;
+}
+/* カスタム時間適用ボタン */
+.custom-time-apply {
+  margin-top: 12px;
+  width: 100%;
+  background: #1a1a1a;
+  color: #fff;
+  border: 2px solid #444;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 10px;
+  font-size: 1em;
+}
+.custom-time-apply:hover {
+  background: #242424;
+  border-color: #666;
+}
+.custom-time-apply.active {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--fg);
+  border-color: var(--fg);
+}
+.num-wrap {
+  position: relative;
+  min-height: 48px;
+}
+.num-wrap input {
+  height: 48px;
+}
+@media (max-height: 700px) {
+  .num-wrap {
+    min-height: 44px;
+    min-width: fit-content;
+  }
+  .num-wrap input {
+    height: 44px;
+  }
+  .custom-time input {
+    font-size: 16px;
+  }
+}
+.num-wrap .step {
+  position: absolute;
+  right: 3px;
+  width: 26px;
+  height: calc(50% - 3px);
+  border: 1.5px solid var(--fg);
+  color: var(--fg);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 10px;
+}
+.num-wrap .step.up {
+  top: 3px;
+  border-bottom-width: 0;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+.num-wrap .step.down {
+  bottom: 3px;
+  border-top-width: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+.num-wrap .step:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+.num-wrap .step:active {
+  transform: scale(0.95);
+}
+
+/* ===== サーキット設定 ===== */
+.circuit-section {
+  margin-top: 6px;
+}
+.circuit-open-btn {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* 履歴ラベル */
+.history-label {
+  display: block;
+  font-size: 0.85em;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 保存されたサーキットリスト */
+.saved-circuits {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+/* スクロールバーのスタイル */
+.saved-circuits::-webkit-scrollbar {
+  width: 6px;
+}
+
+.saved-circuits::-webkit-scrollbar-track {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.05);
+  border-radius: 3px;
+}
+
+.saved-circuits::-webkit-scrollbar-thumb {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 3px;
+}
+
+.saved-circuits::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5);
+}
+
+.saved-circuits .btn {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.08);
+  border: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  color: var(--fg);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9em;
+  text-align: left;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.saved-circuits .btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--fg);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.saved-circuits .btn:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+  border-color: var(--fg);
+  transform: translateX(2px);
+  color: var(--fg);
+}
+
+.saved-circuits .btn:hover::before {
+  opacity: 1;
+}
+
+.saved-circuits .btn:active {
+  transform: translateX(2px) scale(0.98);
+}
+
+/* アラーム設定 */
+.alarm-repeat-setting {
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 8px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.05);
+}
+
+.alarm-repeat-label {
+  display: block;
+  font-size: 0.9em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.alarm-repeat-options {
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+}
+
+.alarm-repeat-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+
+.alarm-repeat-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--fg);
+}
+
+.alarm-repeat-option span {
+  user-select: none;
+}
+
+/* アラーム時刻設定はタイマーのcustom-timeスタイルを継承 */
+#alarmTime.custom-time {
+  margin-top: 6px;
+}
+
+/* アラーム時刻入力欄の幅を広げる */
+#alarmTime .ct-field {
+  flex: 1;
+  max-width: none;
+}
+
+#alarmTime .ct-row {
+  gap: 12px;
+}
+
+/* 画面幅に余裕がある時は入力欄を大きく */
+@media (min-width: 769px) {
+  #alarmTime .num-wrap input {
+    font-size: 1.2em;
+    padding: 10px 34px 10px 10px;
+  }
+
+  #alarmTime .ct-suffix {
+    font-size: 1em;
+  }
+}
+
+.alarm-list-section {
+  margin-top: 6px;
+}
+
+.alarm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.alarm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.08);
+  border: 2px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  color: var(--fg);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.alarm-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--fg);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.alarm-item:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+  border-color: var(--fg);
+  transform: translateX(2px);
+}
+
+.alarm-item:hover::before {
+  opacity: 1;
+}
+
+.alarm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alarm-time {
+  font-size: 1.3em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-family: "Courier New", monospace;
+}
+
+.alarm-repeat-badge {
+  font-size: 0.75em;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alarm-repeat-badge i {
+  font-size: 0.9em;
+}
+
+.alarm-delete {
+  background: none;
+  border: 1.5px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+  color: var(--fg);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85em;
+}
+
+.alarm-delete:hover {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.alarm-delete:active {
+  transform: scale(0.95);
+}
+
+.alarm-empty {
+  text-align: center;
+  padding: 20px;
+  opacity: 0.6;
+  font-size: 0.9em;
+}
+
+/* サーキットタイトル */
+.circuit-title {
+  margin: 36px 36px 8px 0;
+  padding-top: 10px;
+}
+
+/* デザイン設定タイトル */
+#designTitle {
+  margin: 36px 0 20px 0;
+  padding-top: 10px;
+}
+
+/* サーキット名入力 */
+.circuit-name-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1.5px solid #b5b5b5;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: inherit;
+}
+.design-card.light .circuit-name-input {
+  background: #fff;
+  color: #111;
+  border-color: #999;
+}
+
+.circuit-note-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1.5px solid #b5b5b5;
+  background: #1a1a1a;
+  color: #fff;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+.design-card.light .circuit-note-input {
+  background: #fff;
+  color: #111;
+  border-color: #999;
+}
+
+/* デザインアクション（右寄せ） */
+.design-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 8px;
+}
+
+/* ===== Modals ===== */
+.design-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.design-modal.open {
+  display: flex;
+}
+.design-card {
+  background: #151515;
+  border: 1.5px solid #555;
+  color: #fff;
+  border-radius: 14px;
+  min-width: 280px;
+  width: 100%;
+  max-width: min(92vw, 650px);
+  max-height: 90vh;
+  padding: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: auto;
+  box-sizing: border-box;
+  /* スクロールバー表示時のパディング調整 */
+  padding-right: 12px;
+}
+.design-card.light {
+  background: #f7f7f7;
+  color: #111;
+  border-color: #cfcfcf;
+}
+
+.circuit-card {
+  background: #151515;
+  border: 1.5px solid #555;
+  color: #fff;
+  border-radius: 14px;
+  min-width: 320px;
+  width: 100%;
+  max-width: min(95vw, 720px);
+  max-height: 90vh;
+  padding: 16px;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: auto;
+  box-sizing: border-box;
+  /* スクロールバー表示時のパディング調整 */
+  padding-right: 12px;
+}
+.circuit-card.light {
+  background: #f7f7f7;
+  color: #111;
+  border-color: #cfcfcf;
+}
+.circuit-grid {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 14px;
+  align-items: stretch; /* 左右のカラムを同じ高さに */
+}
+
+/* レスポンシブ対応：小さな画面でも左右カラムの関係を維持 */
+@media (max-width: 768px) {
+  .circuit-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: stretch; /* 左右のカラムを同じ高さに */
+  }
+  .circuit-right {
+    border-left: 1px dashed rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+    padding-left: 8px;
+    padding-top: 0;
+  }
+  .circuit-card.light .circuit-right {
+    border-left-color: rgba(0, 0, 0, 0.2);
+  }
+
+  /* 狭い画面でのループ設定を縦並び表示 */
+  .loop-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .loop-count-input {
+    min-width: auto;
+    width: 100%;
+  }
+
+  /* 狭い画面でのアクションボタンを1カラム表示 */
+  .circuit-actions {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* より小さな画面での追加対応 */
+@media (max-width: 600px) {
+  .circuit-card {
+    max-width: 98vw;
+    padding: 12px;
+  }
+
+  .circuit-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch; /* 左右のカラムを同じ高さに */
+  }
+
+  .circuit-right {
+    padding-left: 6px;
+  }
+
+  .circuit-drop {
+    min-height: 20vh;
+  }
+
+  .hint {
+    font-size: 0.8em;
+  }
+
+  /* 狭い画面でのループ設定を縦並び表示 */
+  .loop-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .loop-count-input {
+    min-width: auto;
+    width: 100%;
+  }
+
+  /* カスタム時間入力のフォントサイズとレイアウト調整 */
+  .circuit-ct-label {
+    font-size: 12px;
+    min-width: 16px;
+    flex-shrink: 0; /* ラベルを縮小しない */
+  }
+
+  .circuit-ct-field {
+    min-width: 0; /* フレックスアイテムの縮小を許可 */
+    flex-direction: column; /* 縦並びに変更 */
+    align-items: center;
+    gap: 4px;
+  }
+
+  .circuit-ct-field input {
+    font-size: 14px;
+    padding: 6px 20px 6px 6px;
+    min-width: 35px; /* 最小幅を調整 */
+  }
+
+  .circuit-ct-field .step {
+    width: 18px;
+    height: calc(50% - 1px);
+    font-size: 7px;
+    right: 1px;
+  }
+
+  .circuit-ct-field .step.up {
+    top: 1px;
+  }
+
+  .circuit-ct-field .step.down {
+    bottom: 1px;
+  }
+
+  /* カスタム時間コンテナの調整 */
+  .circuit-custom-time {
+    padding: 6px 4px; /* 左右のパディングをさらに小さく */
+  }
+
+  .circuit-ct-row {
+    gap: 3px; /* ギャップをさらに小さく */
+  }
+}
+
+/* 極端に狭い画面でも左右カラムの関係を維持 */
+@media (max-width: 480px) {
+  .circuit-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    align-items: stretch; /* 左右のカラムを同じ高さに */
+  }
+
+  .circuit-right {
+    padding-left: 4px;
+  }
+
+  .circuit-drop {
+    min-height: 15vh;
+  }
+
+  .hint {
+    font-size: 0.75em;
+    line-height: 1.2;
+  }
+
+  .circuit-loop-settings {
+    padding: 8px;
+  }
+
+  .loop-options {
+    gap: 4px;
+  }
+
+  .circuit-actions {
+    gap: 6px;
+  }
+
+  .circuit-actions .btn {
+    padding: 6px 10px;
+    font-size: 0.9em;
+  }
+
+  /* 狭い画面でのチップ表示調整 */
+  .chip {
+    padding: 4px 6px;
+    font-size: 0.75em;
+  }
+
+  .chip .x {
+    width: 14px;
+    height: 14px;
+    font-size: 0.8em;
+  }
+
+  /* 狭い画面でのループ設定を縦並び表示 */
+  .loop-content {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .loop-count-input {
+    min-width: auto;
+    width: 100%;
+  }
+
+  /* 極端に狭い画面でのカスタム時間入力の調整 */
+  .circuit-ct-label {
+    font-size: 10px;
+    min-width: 14px;
+    flex-shrink: 0; /* ラベルを縮小しない */
+  }
+
+  .circuit-ct-field {
+    min-width: 0; /* フレックスアイテムの縮小を許可 */
+    flex-direction: column; /* 縦並びに変更 */
+    align-items: center;
+    gap: 3px;
+  }
+
+  .circuit-ct-field input {
+    font-size: 12px;
+    padding: 4px 16px 4px 4px;
+    min-width: 30px; /* 最小幅を調整 */
+  }
+
+  .circuit-ct-field .step {
+    width: 16px;
+    height: calc(50% - 1px);
+    font-size: 6px;
+    right: 1px;
+  }
+
+  .circuit-custom-time {
+    padding: 4px 2px; /* 左右のパディングをさらに小さく */
+  }
+
+  .circuit-ct-row {
+    gap: 2px; /* ギャップをさらに小さく */
+  }
+}
+.circuit-left {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  min-height: 200px;
+  flex: 1; /* 右カラムと同じ高さに調整 */
+}
+.circuit-right {
+  border-left: 1px dashed rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  padding-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1; /* 左カラムと同じ高さに調整 */
+}
+.circuit-card.light .circuit-right {
+  border-left-color: rgba(0, 0, 0, 0.2);
+}
+.hint {
+  font-size: 0.85em;
+  opacity: 0.7;
+  line-height: 1.4;
+}
+.circuit-card.light .hint {
+  opacity: 0.6;
+}
+.circuit-drop {
+  min-height: 42vh;
+  border: 2px dashed var(--fg);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+/* 小さな画面でのサーキットドロップエリアの高さ調整 */
+@media (max-height: 600px) {
+  .circuit-drop {
+    min-height: 30vh;
+  }
+}
+@media (max-width: 768px) {
+  .circuit-drop {
+    min-height: 50vh;
+  }
+
+  /* 表示サイズのレスポンシブ対応 */
+  .seven {
+    max-width: calc(
+      var(--disp-scale) * 100vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+
+  /* 00:00形式（4桁）のレスポンシブ対応 */
+  #display.seven:not(:has(.colon:nth-child(6))) {
+    max-width: 100vw !important; /* 横幅いっぱいに表示 */
+  }
+  #display.seven:not(:has(.colon:nth-child(6))) .digit {
+    max-width: calc(
+      var(--disp-scale) * 28vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 48vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+  #display.seven:not(:has(.colon:nth-child(6))) .colon {
+    max-width: calc(
+      var(--disp-scale) * 7.5vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 48vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+  #display.seven:not(:has(.colon:nth-child(6))) .dot {
+    max-width: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+
+  /* 00:00:00形式（6桁）のレスポンシブ対応 */
+  #display.seven:has(.colon:nth-child(6)) {
+    max-width: 100vw !important; /* 横幅いっぱいに表示 */
+  }
+  #display.seven:has(.colon:nth-child(6)) .digit {
+    max-width: calc(
+      var(--disp-scale) * 28vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 24vw
+    ) !important; /* 00:00:00形式をさらに小さくしてはみ出しを防ぐ */
+  }
+  #display.seven:has(.colon:nth-child(6)) .colon {
+    max-width: calc(
+      var(--disp-scale) * 7.5vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 24vw
+    ) !important; /* 00:00:00形式をさらに小さくしてはみ出しを防ぐ */
+  }
+  #display.seven:has(.colon:nth-child(6)) .dot {
+    max-width: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+  }
+  .digit {
+    max-width: calc(
+      var(--disp-scale) * 17vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 30.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    min-width: calc(var(--disp-scale) * 22vw) !important;
+    min-height: calc(var(--disp-scale) * 42vw) !important;
+    min-width: calc(var(--disp-scale) * 15vw) !important;
+  }
+  .colon {
+    max-width: calc(
+      var(--disp-scale) * 4.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 30.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+  .dot {
+    max-width: calc(
+      var(--disp-scale) * 2.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 2.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+
+  /* 00:00:00形式のレスポンシブ制限 */
+  .seven:has(.digit:nth-child(6)) {
+    max-width: min(
+      calc(var(--disp-scale) * 100vw),
+      75vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .digit {
+    max-width: min(
+      calc(var(--disp-scale) * 17vw),
+      8vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 30.5vw),
+      15vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .colon {
+    max-width: min(
+      calc(var(--disp-scale) * 4.5vw),
+      2vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 30.5vw),
+      15vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .dot {
+    max-width: min(
+      calc(var(--disp-scale) * 2.5vw),
+      1.2vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 2.5vw),
+      1.2vw
+    ); /* 狭い画面ではさらに厳しい制限 */
+  }
+
+  /* コントロールボタンのレスポンシブ対応 */
+  .controls {
+    gap: 20px; /* 画面幅が狭い場合のgapを20pxに */
+    position: fixed !important; /* 固定位置に変更 */
+    bottom: 80px !important; /* 音声・デザインアイコンの少し上に配置 */
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* 中央配置 */
+    background: var(--panel) !important; /* 背景を復活 */
+    border-radius: 25px !important; /* 角丸を追加 */
+  }
+
+  /* center-displayの調整（固定位置のため不要） */
+
+  /* デザインFABのレスポンシブ対応 */
+  .design-fab {
+    width: 48px; /* 56px → 48px */
+    height: 48px; /* 48px → 48px */
+    font-size: 18px; /* 22px → 18px */
+    right: 12px; /* 16px → 12px */
+    bottom: 12px; /* 16px → 12px */
+    /* クリック判定エリアを確保 */
+    min-width: 48px;
+    min-height: 48px;
+    /* タッチデバイスでのクリック判定を改善 */
+    touch-action: manipulation;
+  }
+
+  /* 音声FABのレスポンシブ対応 */
+  .sound-fab {
+    width: 48px; /* デザインFABと同じサイズ */
+    height: 48px;
+    font-size: 18px;
+    right: 68px; /* デザインFABの左側に配置 */
+    bottom: 12px;
+    /* クリック判定エリアを確保 */
+    min-width: 48px;
+    min-height: 48px;
+    /* タッチデバイスでのクリック判定を改善 */
+    touch-action: manipulation;
+  }
+
+  /* モード切り替えのレスポンシブ対応 */
+  .mode-switch button {
+    width: 70px;
+    height: 65px; /* 2行表示に対応 */
+    padding: 6px 10px;
+    box-sizing: border-box;
+  }
+  .mode-icon {
+    font-size: 1.3em; /* アイコンを適切なサイズに */
+    width: 1.3em;
+    height: 1.3em;
+  }
+  .mode-label {
+    font-size: 0.6em; /* ラベルを小さく */
+    line-height: 1.1; /* 2行表示に対応 */
+    min-height: 1.5em;
+    max-height: 1.8em;
+    overflow: hidden;
+  }
+}
+
+/* 小さな画面での追加レスポンシブ対応 */
+@media (max-width: 480px) {
+  .design-card,
+  .circuit-card {
+    width: 100%;
+    max-width: 95vw;
+    min-width: 280px;
+    padding: 12px;
+    /* 小さな画面でのスクロールバー対応 */
+    padding-right: 8px;
+  }
+
+  /* 表示サイズの極小画面対応 */
+  .seven {
+    max-width: calc(
+      var(--disp-scale) * 100vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+
+  /* 00:00形式（4桁）の極小画面対応 */
+  #display.seven.timer-mode {
+    max-width: 100vw !important; /* 横幅いっぱいに表示 */
+  }
+  #display.seven.timer-mode .digit {
+    max-width: calc(
+      var(--disp-scale) * 28vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 48vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+  #display.seven:not(:has(.colon:nth-child(6))) .colon {
+    max-width: calc(
+      var(--disp-scale) * 7.5vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 48vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+  #display.seven:not(:has(.colon:nth-child(6))) .dot {
+    max-width: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+    max-height: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00形式はさらに大きく表示 */
+  }
+
+  /* 00:00:00形式（6桁）の極小画面対応 */
+  #display.seven:has(.colon:nth-child(6)) {
+    max-width: 100vw !important; /* 横幅いっぱいに表示 */
+  }
+  #display.seven:has(.colon:nth-child(6)) .digit {
+    max-width: calc(
+      var(--disp-scale) * 28vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 20vw
+    ) !important; /* 00:00:00形式を極小画面用にさらに小さく */
+    min-width: calc(var(--disp-scale) * 15vw) !important;
+  }
+  #display.seven:has(.colon:nth-child(6)) .colon {
+    max-width: calc(
+      var(--disp-scale) * 7.5vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 20vw
+    ) !important; /* 00:00:00形式を極小画面用にさらに小さく */
+  }
+  #display.seven:has(.colon:nth-child(6)) .dot {
+    max-width: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+    max-height: calc(
+      var(--disp-scale) * 4vw
+    ) !important; /* 00:00:00形式をタイマーと同じサイズに調整 */
+  }
+  .digit {
+    max-width: calc(
+      var(--disp-scale) * 17vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 30.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+  .colon {
+    max-width: calc(
+      var(--disp-scale) * 4.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 30.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+  .dot {
+    max-width: calc(
+      var(--disp-scale) * 2.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+    max-height: calc(
+      var(--disp-scale) * 2.5vw
+    ); /* スライダー100%の時は画面いっぱいに表示 */
+  }
+
+  /* 00:00:00形式の極小画面制限 */
+  .seven:has(.digit:nth-child(6)) {
+    max-width: min(
+      calc(var(--disp-scale) * 100vw),
+      70vw
+    ); /* 極小画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .digit {
+    max-width: min(
+      calc(var(--disp-scale) * 17vw),
+      6vw
+    ); /* 極小画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 30.5vw),
+      12vw
+    ); /* 極小画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .colon {
+    max-width: min(
+      calc(var(--disp-scale) * 4.5vw),
+      1.5vw
+    ); /* 極小画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 30.5vw),
+      12vw
+    ); /* 極小画面ではさらに厳しい制限 */
+  }
+  .seven:has(.digit:nth-child(6)) .dot {
+    max-width: min(
+      calc(var(--disp-scale) * 2.5vw),
+      1vw
+    ); /* 極小画面ではさらに厳しい制限 */
+    max-height: min(
+      calc(var(--disp-scale) * 2.5vw),
+      1vw
+    ); /* 極小画面ではさらに厳しい制限 */
+  }
+
+  /* デザインFABの極小画面対応 */
+  .design-fab {
+    width: 44px; /* 48px → 44px */
+    height: 44px; /* 48px → 44px */
+    font-size: 16px; /* 18px → 16px */
+    right: 10px; /* 12px → 10px */
+    bottom: 10px; /* 12px → 10px */
+    /* クリック判定エリアを確保 */
+    min-width: 44px;
+    min-height: 44px;
+    /* タッチデバイスでのクリック判定を改善 */
+    touch-action: manipulation;
+  }
+
+  /* 音声FABの極小画面対応 */
+  .sound-fab {
+    width: 44px; /* デザインFABと同じサイズ */
+    height: 44px;
+    font-size: 16px;
+    right: 60px; /* デザインFABの左側に配置 */
+    bottom: 10px;
+    /* クリック判定エリアを確保 */
+    min-width: 44px;
+    min-height: 44px;
+    /* タッチデバイスでのクリック判定を改善 */
+    touch-action: manipulation;
+  }
+
+  /* モード切り替えの極小画面対応 */
+  .mode-switch button {
+    width: 60px;
+    height: 55px; /* 2行表示に対応 */
+    padding: 4px 6px;
+    box-sizing: border-box;
+  }
+  .mode-icon {
+    font-size: 1.1em; /* アイコンを適切なサイズに */
+    width: 1.1em;
+    height: 1.1em;
+  }
+  .mode-label {
+    font-size: 0.55em; /* ラベルを小さく */
+    line-height: 1.1; /* 2行表示に対応 */
+    min-height: 2.25em;
+    overflow: hidden;
+  }
+
+  /* コントロールボタンの極小画面対応 */
+  .controls {
+    padding: 15px 20px; /* パディングを少し減らして上方に配置 */
+    position: fixed !important; /* 固定位置に変更 */
+    bottom: 70px !important; /* 音声・デザインアイコンの少し上に配置（少し上に） */
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* 中央配置 */
+    background: var(--panel) !important; /* 背景を復活 */
+    border-radius: 20px !important; /* 角丸を追加（少し小さく） */
+  }
+
+  /* center-displayの極小画面対応（固定位置のため不要） */
+  .controls button {
+    width: 60px; /* 70px → 60px */
+    height: 60px; /* 70px → 60px */
+    font-size: 1.7em; /* 2em → 1.7em */
+  }
+}
+
+.alert-card {
+  padding: 20px 15px;
+  width: 100%;
+  max-width: 95vw;
+  /* 小さな画面でのスクロールバー対応 */
+  padding-right: 21px;
+}
+
+.side-menu {
+  width: 180px;
+  right: -200px;
+  padding-right: 2px;
+}
+
+.side-menu.open + .menu-toggle {
+  right: 180px;
+}
+
+/* モーダルのパディングを調整 */
+.design-modal,
+.alert-modal {
+  padding: 10px;
+}
+
+/* カスタム時間入力欄の調整 */
+.custom-time .ct-row {
+  gap: 2px;
+  margin-right: 1px;
+}
+
+.custom-time input {
+  font-size: 16px;
+  padding: 6px 30px 6px 6px;
+}
+
+/* デザイン設定のレスポンシブ対応 */
+.palette-list {
+  gap: 6px;
+  padding: 6px;
+}
+
+.palette {
+  padding: 3px 6px;
+  gap: 4px;
+}
+
+.sound-type-list {
+  gap: 6px;
+  padding: 6px;
+}
+
+.sound-type-item {
+  padding: 6px 8px;
+  min-height: 36px;
+}
+
+/* 音声種類は常に2列表示（上記で設定済み） */
+
+/* スクロールバー表示時の特別対応 */
+.side-menu::-webkit-scrollbar,
+.design-modal::-webkit-scrollbar,
+.design-card::-webkit-scrollbar,
+.circuit-card::-webkit-scrollbar,
+.alert-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-menu::-webkit-scrollbar-track,
+.design-modal::-webkit-scrollbar-track,
+.design-card::-webkit-scrollbar-track,
+.circuit-card::-webkit-scrollbar-track,
+.alert-modal::-webkit-scrollbar-track {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.05);
+  border-radius: 3px;
+}
+
+.side-menu::-webkit-scrollbar-thumb,
+.design-modal::-webkit-scrollbar-thumb,
+.design-card::-webkit-scrollbar-thumb,
+.circuit-card::-webkit-scrollbar-thumb,
+.alert-modal::-webkit-scrollbar-thumb {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 3px;
+}
+
+.side-menu::-webkit-scrollbar-thumb:hover,
+.design-modal::-webkit-scrollbar-thumb:hover,
+.design-card::-webkit-scrollbar-thumb:hover,
+.circuit-card::-webkit-scrollbar-thumb:hover,
+.alert-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5);
+}
+
+/* スクロールバーが表示される場合のカスタム時間調整 */
+@media (max-height: 800px) {
+  .custom-time .ct-row {
+    gap: 3px;
+    margin-right: 3px;
+  }
+
+  .custom-time input {
+    font-size: 16px;
+    padding: 6px 32px 6px 6px;
+  }
+
+  /* モーダルカードのスクロールバー対応 */
+  .design-card,
+  .circuit-card {
+    padding-right: 10px;
+  }
+
+  .alert-card {
+    padding-right: 24px;
+  }
+}
+.circuit-card.light .circuit-drop {
+  border-color: #999;
+}
+.chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.12);
+  border: 1.5px solid var(--fg);
+  color: var(--fg);
+  padding: 8px;
+  border-radius: 10px;
+  cursor: grab;
+  user-select: none;
+  width: 100%;
+  touch-action: none; /* タッチ操作の最適化 */
+  transition: all 0.2s ease; /* スムーズなアニメーション */
+}
+
+.chip-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-note-btn {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  color: var(--fg);
+  padding: 3px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.chip-note-btn:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border-color: var(--fg);
+  transform: translateY(-1px);
+}
+
+.chip-note-btn:active {
+  transform: translateY(0);
+}
+
+.chip-note-btn i {
+  font-size: 0.6rem;
+}
+.circuit-card.light .chip {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #555;
+  color: #111;
+}
+.chip .x {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--fg);
+  font-size: 12px;
+}
+.circuit-card.light .chip .x {
+  border-color: #555;
+}
+.chip .x:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+.circuit-card.light .chip .x:hover {
+  background: #333;
+  color: #fff;
+}
+.chip.dragging {
+  opacity: 0.5;
+}
+
+.chip.selected {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.25);
+  border-color: var(--fg);
+  box-shadow: 0 0 8px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.circuit-card.light .chip.selected {
+  background: rgba(0, 0, 0, 0.15);
+  border-color: #333;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 右カラムのチップでは×ボタンを常に非表示 */
+.circuit-right .chip .x {
+  display: none;
+}
+
+/* 右カラムのチップでは時間表記を常に非表示 */
+.circuit-right .chip .hint {
+  display: none;
+}
+
+/* 幅が狭い場合の(00:00)表記を非表示 */
+@media (max-width: 768px) {
+  .circuit-left .chip .hint {
+    display: none;
+  }
+
+  /* ヒント文言の表示切り替え */
+  .hint-wide {
+    display: none !important;
+  }
+
+  .hint-narrow {
+    display: block !important;
+  }
+}
+
+/* 画面幅が充分な場合 */
+@media (min-width: 769px) {
+  .hint-wide {
+    display: block !important;
+  }
+
+  .hint-narrow {
+    display: none !important;
+  }
+}
+
+/* 左カラムのコントロール - 画面幅が狭い時のみ表示 */
+.circuit-left-controls {
+  display: none;
+  gap: 8px;
+  margin-bottom: 8px;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .circuit-left-controls {
+    display: flex;
+  }
+}
+
+.circuit-reorder-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--fg);
+  border-radius: 6px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+  color: var(--fg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.circuit-reorder-btn:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border-color: var(--fg);
+}
+
+.circuit-reorder-btn:active {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.circuit-reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ライトテーマ用 */
+.circuit-card.light .circuit-reorder-btn {
+  border-color: #555;
+  color: #111;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.circuit-card.light .circuit-reorder-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: #333;
+}
+
+.circuit-card.light .circuit-reorder-btn:active {
+  background: #333;
+  color: #fff;
+}
+
+/* 右カラムのコンテンツレイアウト */
+.circuit-right-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 右カラムのチップリストを2列表示 */
+.circuit-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+/* プリセット時間のチップを中央寄せ */
+.circuit-list .chip {
+  text-align: center;
+  justify-content: center;
+}
+
+/* 右カラムのヒント文言のスタイル調整 */
+.circuit-right .hint {
+  font-size: 0.625em;
+  opacity: 0.7;
+  text-align: center;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+/* サーキット作成モーダルのカスタム時間入力 */
+.circuit-custom-time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px; /* ギャップを小さく */
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.12);
+  border: 1.5px solid var(--fg);
+  color: var(--fg);
+  padding: 8px 6px; /* 左右のパディングを小さく */
+  border-radius: 10px;
+  cursor: grab;
+  user-select: none;
+  width: 100%;
+  transition: all 0.2s ease;
+  touch-action: none; /* タッチ操作の最適化 */
+}
+
+.circuit-custom-time:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border-color: var(--fg);
+}
+
+.circuit-custom-time:active {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+.circuit-ct-row {
+  display: flex;
+  gap: 4px; /* ギャップを小さく */
+  width: 100%;
+  min-width: 0; /* フレックスアイテムの縮小を許可 */
+}
+
+.circuit-ct-field {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0; /* フレックスアイテムの縮小を許可 */
+}
+
+.circuit-ct-field .num-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.circuit-ct-label {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  min-width: 20px;
+  text-align: center;
+  flex-shrink: 0; /* ラベルを縮小しない */
+}
+
+.circuit-ct-field input {
+  width: 100%;
+  min-width: 40px; /* 最小幅を設定 */
+  padding: 8px 24px 8px 8px; /* 上下のパディングを増やし、右のパディングを減らす */
+  border: 1.5px solid var(--fg);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 16px; /* フォントサイズを大きく */
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+  font-weight: 600; /* フォントを太く */
+}
+
+.circuit-ct-field .step {
+  position: absolute;
+  right: 2px; /* 右端を少し内側に */
+  width: 20px; /* 幅を小さく */
+  height: calc(50% - 2px); /* 高さを少し小さく */
+  border: 1px solid var(--fg); /* ボーダーを細く */
+  color: var(--fg);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 8px; /* フォントサイズを小さく */
+  pointer-events: auto;
+}
+
+.circuit-ct-field .step.up {
+  top: 2px; /* 位置を調整 */
+  border-bottom-width: 0;
+  border-top-left-radius: 4px; /* 角丸を小さく */
+  border-top-right-radius: 4px;
+}
+
+.circuit-ct-field .step.down {
+  bottom: 2px; /* 位置を調整 */
+  border-top-width: 0;
+  border-bottom-left-radius: 4px; /* 角丸を小さく */
+  border-bottom-right-radius: 4px;
+}
+
+.circuit-ct-field .step:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.circuit-ct-field .step:active {
+  transform: scale(0.95);
+}
+
+.circuit-loop-settings {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 8px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 通常画面では横並び */
+.loop-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.loop-count-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 6px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.08);
+  min-width: 200px;
+}
+
+.loop-count-input label {
+  font-size: 0.9em;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.circuit-card.light .loop-count-input {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.circuit-card.light .loop-count-input label {
+  color: #000;
+}
+.loop-label {
+  display: block;
+  font-size: 0.9em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.loop-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex: 1;
+}
+.loop-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+.loop-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--fg);
+}
+.loop-option span {
+  user-select: none;
+}
+.loop-count-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 24px;
+  white-space: nowrap;
+}
+.loop-count-input label {
+  font-size: 0.9em;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+.loop-count-input .num-wrap {
+  position: relative;
+  display: inline-block;
+}
+.loop-count-input input[type="number"] {
+  width: 50px;
+  padding: 6px 20px 6px 6px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 0.95em;
+  text-align: center;
+}
+.loop-count-input input[type="number"]:focus {
+  outline: none;
+  border-color: var(--fg);
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+}
+.loop-count-input .step {
+  position: absolute;
+  right: 1px;
+  width: 20px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+  border-radius: 1px;
+  color: var(--fg);
+  font-size: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 1;
+}
+.loop-count-input .step:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-color: var(--fg);
+}
+.loop-count-input .step.up {
+  top: 1px;
+}
+.loop-count-input .step.down {
+  bottom: 1px;
+}
+.loop-hint {
+  font-size: 0.9em;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.circuit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.btn {
+  background: transparent;
+  border: 2px solid var(--fg);
+  color: var(--fg);
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s,
+    border-color 0.15s;
+  font-weight: 700;
+}
+.btn:hover {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--fg);
+}
+.btn.primary {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 0 6px var(--fg);
+}
+
+/* 中立色ボタン（テーマ非依存） */
+.design-card .btn.neutral {
+  border-color: var(--ui-accent);
+  color: #fff;
+  background: #222;
+}
+.design-card.light .btn.neutral {
+  border-color: var(--ui-accent);
+  color: #111;
+  background: #fff;
+}
+.design-card .btn.neutral:hover {
+  background: var(--ui-accent);
+  color: #111;
+  box-shadow: none;
+}
+.design-card.light .btn.neutral:hover {
+  background: var(--ui-accent);
+  color: #111;
+}
+
+.circuit-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  line-height: 1;
+  padding: 8px 12px;
+  background: #4a4a4a;
+  border: 1.5px solid #bdbdbd;
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: 800;
+}
+.circuit-close:hover {
+  background: #5a5a5a;
+  border-color: #e0e0e0;
+}
+.circuit-card.light .circuit-close {
+  background: #000 !important;
+  border: 3px solid #000 !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+}
+.circuit-card.light .circuit-close:hover {
+  background: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.design-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 10px 0;
+}
+.palette-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+.palette-list.grid2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.palette {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.design-card.light .palette {
+  border-color: #bbb;
+}
+.palette.active {
+  border: 2px solid #fff;
+}
+.design-card.light .palette.active {
+  border-color: #333;
+}
+.palette .swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+.design-card.light .palette .swatch {
+  border-color: #999;
+}
+
+.bg-switch {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== テーマ色の統合スタイル ===== */
+/* モーダルカードのローカル変数 */
+.design-card,
+.circuit-card {
+  --accent-local: var(--fg);
+  --accent-local-r: var(--fg-r);
+  --accent-local-g: var(--fg-g);
+  --accent-local-b: var(--fg-b);
+  /* 中立配色のトークン（ダーク） */
+  --choice-stroke: rgba(255, 255, 255, 0.55);
+  --choice-stroke-strong: #fff;
+  --choice-fill: rgba(255, 255, 255, 0.12);
+  --choice-text: #f2f2f2;
+  --choice-text-invert: #111;
+}
+
+.design-card.light {
+  /* ライトモード用 */
+  --choice-stroke: #333;
+  --choice-stroke-strong: #111;
+  --choice-fill: rgba(0, 0, 0, 0.06);
+  --choice-text: #111;
+  --choice-text-invert: #fff;
+}
+
+/* モーダル内のボタンスタイル（デザイン設定モーダルとサーキット名入力） */
+.design-card .btn,
+.circuit-card .btn {
+  border: 2px solid var(--choice-stroke) !important;
+  color: var(--choice-text) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: 0.2s ease;
+}
+
+.design-card .btn:hover,
+.circuit-card .btn:hover,
+.design-card .btn:focus-visible,
+.circuit-card .btn:focus-visible {
+  background: var(--choice-fill) !important;
+  color: var(--choice-text) !important;
+  outline: 2px solid var(--choice-stroke-strong);
+  outline-offset: 2px;
+}
+
+.design-card .btn.primary,
+.circuit-card .btn.primary {
+  background: var(--choice-stroke) !important;
+  color: var(--choice-text-invert) !important;
+}
+
+.design-card .btn.primary:hover,
+.circuit-card .btn.primary:hover {
+  background: var(--choice-stroke-strong) !important;
+}
+
+/* 背景切替ボタン */
+.design-card .bg-switch button {
+  border: 2px solid var(--choice-stroke);
+  color: var(--choice-text);
+  background: transparent;
+  transition: 0.2s ease;
+  position: relative;
+  min-width: 60px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.design-card .bg-switch button:hover,
+.design-card .bg-switch button:focus-visible {
+  background: var(--choice-fill);
+  color: var(--choice-text);
+  outline: 2px solid var(--choice-stroke-strong);
+  outline-offset: 2px;
+}
+
+.design-card .bg-switch button.active {
+  background: var(--choice-fill) !important;
+  color: var(--choice-text) !important;
+  border-color: var(--choice-stroke-strong) !important;
+  box-shadow: 0 0 6px var(--choice-stroke-strong) !important;
+}
+
+/* より具体的なセレクターでアクティブ状態を確実に適用 */
+.design-card .bg-switch button.btn.neutral.active {
+  background: var(--choice-fill) !important;
+  color: var(--choice-text) !important;
+  border-color: var(--choice-stroke-strong) !important;
+  box-shadow: 0 0 6px var(--choice-stroke-strong) !important;
+}
+
+/* パレット項目 */
+.design-card .palette {
+  border-color: var(--choice-stroke);
+}
+
+.design-card .palette.active,
+.design-card.light .palette.active {
+  border-color: var(--choice-stroke-strong);
+}
+
+/* ===== サーキット作成・クリアボタン（ライトモード）最優先 ===== */
+/* より高い詳細度と!importantで確実に適用 */
+.circuit-card.light .circuit-actions .btn {
+  border: 3px solid #000 !important;
+  color: #000 !important;
+  background: #fff !important;
+  font-weight: 900 !important;
+  padding: 10px 16px !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.circuit-card.light .circuit-actions .btn:hover {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  outline: none !important;
+}
+.circuit-card.light .circuit-actions .btn.primary {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: #000 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  font-weight: 900 !important;
+}
+.circuit-card.light .circuit-actions .btn.primary:hover {
+  background: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+/* ライトモード - ループ設定 */
+.circuit-card.light .circuit-loop-settings {
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+.circuit-card.light .loop-label {
+  color: #000 !important;
+}
+.circuit-card.light .loop-option {
+  color: #000 !important;
+}
+.circuit-card.light .loop-option input[type="radio"] {
+  accent-color: #000 !important;
+}
+.circuit-card.light .loop-count-input {
+  color: #000 !important;
+}
+.circuit-card.light .loop-count-input input[type="number"] {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  color: #000 !important;
+}
+.circuit-card.light .loop-count-input input[type="number"]:focus {
+  border-color: #000 !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+}
+.circuit-card.light .loop-count-input .step {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+  color: #000 !important;
+}
+.circuit-card.light .loop-count-input .step:hover {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-color: #000 !important;
+}
+
+/* ライトテーマ用のカスタム時間入力スタイル */
+.circuit-card.light .circuit-custom-time {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #555;
+  color: #111;
+}
+
+.circuit-card.light .circuit-custom-time:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: #333;
+}
+
+.circuit-card.light .circuit-ct-field input {
+  border-color: #555;
+  color: #111;
+  font-weight: 600; /* ライトテーマでも太字 */
+}
+
+.circuit-card.light .circuit-ct-field .step {
+  border-color: #555;
+  color: #111;
+}
+
+.circuit-card.light .circuit-ct-field .step:hover {
+  background: #333;
+  color: #fff;
+}
+
+.circuit-card.light .circuit-ct-label {
+  color: #111;
+}
+
+/* デザイン設定セクション区切り */
+.design-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1);
+}
+
+.design-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.design-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+}
+
+/* 音声種類選択UI */
+.design-row label {
+  white-space: nowrap;
+}
+
+.sound-type-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 8px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.05);
+}
+
+.design-card.light .sound-type-list {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sound-type-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.08);
+  justify-content: center;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.design-card.light .sound-type-item {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.sound-type-item:hover {
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.15);
+  border-color: var(--fg);
+  transform: translateY(-2px);
+}
+
+.design-card.light .sound-type-item:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: #000;
+}
+
+.sound-type-item.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+  box-shadow: 0 0 8px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.design-card.light .sound-type-item.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.sound-type-item input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--fg);
+}
+
+.sound-type-item .sound-name {
+  font-weight: 600;
+  font-size: 0.8em;
+}
+
+/* タイマー終了アラートモーダル */
+.alert-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.alert-modal.open {
+  display: flex;
+  animation: alertFadeIn 0.3s ease-out;
+}
+
+.alert-card {
+  background: linear-gradient(
+    135deg,
+    var(--bg),
+    rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1)
+  );
+  border: 2px solid var(--fg);
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  max-width: min(90vw, 400px);
+  max-height: 90vh;
+  box-shadow: 0 0 30px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5),
+    0 0 60px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: alertSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  margin: auto;
+  box-sizing: border-box;
+  /* スクロールバー表示時のパディング調整 */
+  padding-right: 26px;
+}
+
+.alert-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2),
+    transparent
+  );
+  animation: alertShine 2s ease-in-out;
+}
+
+/* 現在時刻表示モーダル */
+.time-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.time-modal.open {
+  display: flex;
+  animation: alertFadeIn 0.3s ease-out;
+}
+
+.time-card {
+  background: linear-gradient(
+    135deg,
+    var(--bg),
+    rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.1)
+  );
+  border: 2px solid var(--fg);
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  max-width: min(90vw, 400px);
+  max-height: 90vh;
+  box-shadow: 0 0 30px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5),
+    0 0 60px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: alertSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+  margin: auto;
+  box-sizing: border-box;
+}
+
+.time-display-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--fg);
+  text-shadow: 0 0 20px var(--fg), 0 0 40px var(--fg);
+}
+
+.time-hours,
+.time-minutes,
+.time-seconds {
+  min-width: 2ch;
+}
+
+.time-separator {
+  font-size: 3rem;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.time-date {
+  font-size: 1.2rem;
+  color: var(--fg);
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+.time-close-button {
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.time-close-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+}
+
+.time-close-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+.alert-icon {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.digital-clock {
+  position: relative;
+  width: 120px;
+  height: 60px;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  border: 2px solid var(--fg);
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: alertPulse 1s ease-in-out infinite;
+  overflow: hidden;
+}
+
+.clock-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #000, #111);
+  border-radius: 10px;
+}
+
+.clock-digits {
+  font-family: "Courier New", monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--fg);
+  text-shadow: 0 0 10px var(--fg);
+  letter-spacing: 2px;
+  animation: alertGlow 2s ease-in-out infinite alternate;
+  position: relative;
+  z-index: 2;
+}
+
+.clock-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--fg);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: clockPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 10px var(--fg);
+}
+
+.digital-clock::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3),
+    transparent
+  );
+  animation: digitalScan 3s ease-in-out infinite;
+}
+
+.digital-clock::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+@keyframes clockPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+@keyframes digitalScan {
+  0% {
+    left: -100%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.alert-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--fg);
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px var(--fg);
+  animation: alertGlow 2s ease-in-out infinite alternate;
+}
+
+.alert-message {
+  font-size: 1.1rem;
+  color: var(--fg);
+  opacity: 0.9;
+  margin-bottom: 30px;
+  line-height: 1.4;
+}
+
+.alert-button {
+  background: var(--fg);
+  color: var(--bg);
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.alert-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6);
+}
+
+.alert-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+}
+
+/* アニメーション */
+@keyframes alertFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes alertSlideIn {
+  from {
+    transform: scale(0.3) translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes alertPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes alertGlow {
+  from {
+    text-shadow: 0 0 10px var(--fg);
+  }
+  to {
+    text-shadow: 0 0 20px var(--fg), 0 0 30px var(--fg);
+  }
+}
+
+@keyframes alertShine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
