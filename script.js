@@ -377,46 +377,11 @@ const AlarmSound = (() => {
     }
   };
 
-  const testTickSound = (tickType) => {
-    console.log(`🔊 チクタク音をテスト再生 (種類: ${tickType})`);
-
-    // 前のテスト音を停止
-    if (testAudio) {
-      testAudio.pause();
-      testAudio.currentTime = 0;
-      testAudio = null;
-    }
-
-    const soundFile =
-      tickType === "pendulum"
-        ? "sound/pendulum_clock.mp3"
-        : "sound/timer_beep.mp3";
-
-    testAudio = new Audio(soundFile);
-    testAudio.volume = volume;
-    testAudio.play().catch((error) => {
-      console.error("チクタク音のテスト再生エラー:", error);
-    });
-
-    // 5秒後に自動停止
-    setTimeout(() => {
-      if (testAudio) {
-        testAudio.pause();
-        testAudio.currentTime = 0;
-        testAudio = null;
-      }
-    }, 5000);
-  };
 
   // 音量設定関数
   const setVolume = (newVolume) => {
     volume = Math.max(0, Math.min(1, newVolume)); // 0-1の範囲に制限
     console.log(`🔊 音量を${Math.round(volume * 100)}%に設定`);
-
-    // 再生中のチクタク音の音量も更新
-    if (tickAudio1) {
-      tickAudio1.volume = volume;
-    }
   };
 
   // 音量取得関数
@@ -436,116 +401,11 @@ const AlarmSound = (() => {
   // 音声種類一覧取得関数
   const getSoundTypes = () => SOUND_TYPES;
 
-  // チクタク音の管理
-  let tickSoundType = "off"; // off, pendulum, timer
-  let tickAudio1 = null;
-  let currentTickAudio = null; // 現在再生中のオーディオ
-  let isTickPlaying = false;
-  let tickIntervalId = null; // 1秒ごとに再生するためのインターバルID
-
   // アラーム音声の管理
   let alarmAudio = null;
 
   // テスト音声の管理
   let testAudio = null;
-
-  const playTickSound = () => {
-    if (tickSoundType === "off") return;
-
-    // 既存の音声を停止
-    stopTickSound();
-
-    // 音声ファイルを取得
-    const soundFile =
-      tickSoundType === "pendulum"
-        ? "sound/pendulum_clock.mp3"
-        : "sound/timer_beep.mp3";
-
-    // 1つのAudioインスタンスを準備
-    tickAudio1 = new Audio(soundFile);
-    tickAudio1.volume = volume;
-    tickAudio1.preload = "auto";
-
-    isTickPlaying = true;
-
-    // 音声ファイルの長さを取得してから再生を開始
-    tickAudio1.addEventListener("loadedmetadata", () => {
-      const audioDuration = tickAudio1.duration;
-      console.log(`🔊 チクタク音の長さ: ${audioDuration}秒`);
-
-      // チック音を再生する関数
-      const playTick = () => {
-        if (!isTickPlaying || tickSoundType === "off") return;
-
-        // 前の音を確実に停止してから再生
-        if (tickAudio1) {
-          tickAudio1.pause();
-          tickAudio1.currentTime = 0;
-          tickAudio1.play().catch((error) => {
-            console.error("チクタク音の再生エラー:", error);
-          });
-        }
-      };
-
-      // 最初の音を即座に再生
-      playTick();
-
-      // 音声ファイルの長さに合わせて繰り返し再生
-      // 音声の長さをミリ秒に変換して使用
-      const intervalMs = Math.max(audioDuration * 1000, 100); // 最低100ms
-      tickIntervalId = setInterval(playTick, intervalMs);
-    });
-
-    // メタデータ読み込みエラー時のフォールバック
-    tickAudio1.addEventListener("error", () => {
-      console.error("チクタク音の読み込みエラー");
-      // エラー時は1秒間隔で再生を試みる
-      const playTick = () => {
-        if (!isTickPlaying || tickSoundType === "off") return;
-        if (tickAudio1) {
-          tickAudio1.pause();
-          tickAudio1.currentTime = 0;
-          tickAudio1.play().catch((error) => {
-            console.error("チクタク音の再生エラー:", error);
-          });
-        }
-      };
-      playTick();
-      tickIntervalId = setInterval(playTick, 1000);
-    });
-  };
-
-  const stopTickSound = () => {
-    isTickPlaying = false;
-
-    // インターバルをクリア
-    if (tickIntervalId) {
-      clearInterval(tickIntervalId);
-      tickIntervalId = null;
-    }
-
-    if (tickAudio1) {
-      tickAudio1.pause();
-      tickAudio1.currentTime = 0;
-      tickAudio1 = null;
-    }
-
-    currentTickAudio = null;
-  };
-
-  const setTickSoundType = (type) => {
-    const wasPlaying = isTickPlaying;
-    tickSoundType = type;
-    console.log(`🔊 チクタク音を${type}に設定`);
-
-    // 再生中の場合、新しい音で再開
-    if (wasPlaying && type !== "off") {
-      stopTickSound();
-      playTickSound();
-    }
-  };
-
-  const getTickSoundType = () => tickSoundType;
 
   const stopAlarm = () => {
     if (alarmAudio) {
@@ -568,17 +428,12 @@ const AlarmSound = (() => {
     playAlarm,
     stopAlarm,
     testSound,
-    testTickSound,
     stopTestSound,
     setVolume,
     getVolume,
     setSoundType,
     getSoundType,
     getSoundTypes,
-    playTickSound,
-    stopTickSound,
-    setTickSoundType,
-    getTickSoundType,
   };
 })();
 
@@ -1164,11 +1019,6 @@ const TimerControl = (() => {
     });
     updateToggleButton(true);
     updateCircuitProgress();
-
-    // タイマーモードの場合、チクタク音を再生
-    if (!state.isStopwatch) {
-      AlarmSound.playTickSound();
-    }
   };
 
   const pause = () => {
@@ -1189,9 +1039,6 @@ const TimerControl = (() => {
 
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
-
-    // チクタク音を停止
-    AlarmSound.stopTickSound();
   };
 
   const stop = () => {
@@ -1201,9 +1048,6 @@ const TimerControl = (() => {
     }
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
-
-    // チクタク音を停止
-    AlarmSound.stopTickSound();
   };
 
   const reset = () => {
@@ -2211,7 +2055,7 @@ const MinimalMode = (() => {
   const body = document.body;
   let isMinimalMode = false;
 
-  const toggle = () => {
+  const toggle = async () => {
     isMinimalMode = !isMinimalMode;
 
     if (isMinimalMode) {
@@ -2224,10 +2068,48 @@ const MinimalMode = (() => {
       if (sideMenu && sideMenu.classList.contains("open")) {
         SideMenu.close();
       }
+
+      // フルスクリーンモードを試みる（サポートされている場合）
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.log("フルスクリーンモードはサポートされていません", err);
+      }
+
+      // 画面の向きを横向きにロック（サポートされている場合）
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape").catch(() => {
+            console.log("画面の向きロックはサポートされていません");
+          });
+        }
+      } catch (err) {
+        console.log("画面の向きロックはサポートされていません", err);
+      }
     } else {
       // 通常モードに戻る
       body.classList.remove("minimal-mode");
       toggleButton.setAttribute("aria-label", "ミニマルモード切り替え");
+
+      // フルスクリーンモードを解除
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      } catch (err) {
+        console.log("フルスクリーン解除エラー", err);
+      }
+
+      // 画面の向きロックを解除
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch (err) {
+        console.log("画面の向きロック解除エラー", err);
+      }
     }
   };
 
@@ -4261,11 +4143,6 @@ const SoundSettings = (() => {
   const applyButton = document.getElementById("soundApply");
   const typeList = document.getElementById("soundModalTypeList");
   const testButton = document.getElementById("soundModalTest");
-  const tickSoundToggle = document.getElementById("tickSoundToggle");
-  const tickSoundSwitchLabel = document.querySelector(
-    ".tick-sound-switch-label"
-  );
-  const tickSoundOptions = document.getElementById("tickSoundOptions");
 
   let soundSnapshot = null;
 
@@ -4300,39 +4177,12 @@ const SoundSettings = (() => {
     });
   };
 
-  // チクタク音UIを更新
-  const updateTickSoundUI = (tickType) => {
-    const isOn = tickType !== "off";
-
-    // スイッチの状態を更新
-    tickSoundToggle.checked = isOn;
-    tickSoundSwitchLabel.textContent = isOn ? "ON" : "OFF";
-
-    // オプションの有効/無効を切り替え
-    if (isOn) {
-      tickSoundOptions.classList.add("enabled");
-    } else {
-      tickSoundOptions.classList.remove("enabled");
-    }
-
-    // 選択されているオプションをハイライト
-    const tickItems = tickSoundOptions.querySelectorAll(".tick-sound-option");
-    tickItems.forEach((item) => {
-      const itemType = item.dataset.tick;
-      if (itemType === tickType) {
-        item.classList.add("active");
-      } else {
-        item.classList.remove("active");
-      }
-    });
-  };
 
   // スナップショットを作成
   const createSnapshot = () => {
     return {
       volume: AlarmSound.getVolume(),
       soundType: AlarmSound.getSoundType(),
-      tickSoundType: AlarmSound.getTickSoundType(),
     };
   };
 
@@ -4352,9 +4202,6 @@ const SoundSettings = (() => {
     if (soundTypeRadio) {
       soundTypeRadio.checked = true;
     }
-
-    // チクタク音を選択
-    updateTickSoundUI(snapshot.tickSoundType);
   };
 
   // モーダルを開く
@@ -4447,68 +4294,10 @@ const SoundSettings = (() => {
     }
   });
 
-  // スイッチの切り替え
-  if (tickSoundToggle) {
-    tickSoundToggle.addEventListener("change", (e) => {
-      if (!e.target.checked) {
-        // OFFにする
-        AlarmSound.setTickSoundType("off");
-        updateTickSoundUI("off");
-
-        // 再生中の場合、チクタク音を停止
-        const state = TimerState.get();
-        if (state.isRunning && !state.isStopwatch) {
-          AlarmSound.stopTickSound();
-        }
-      } else {
-        // ONにする - デフォルトで振り子時計を選択
-        const currentType = AlarmSound.getTickSoundType();
-        const newType = currentType === "off" ? "pendulum" : currentType;
-        AlarmSound.setTickSoundType(newType);
-        updateTickSoundUI(newType);
-
-        // 再生中の場合、チクタク音を開始
-        const state = TimerState.get();
-        if (state.isRunning && !state.isStopwatch) {
-          AlarmSound.playTickSound();
-        }
-      }
-    });
-  }
-
-  // チクタク音のオプション選択
-  if (tickSoundOptions) {
-    tickSoundOptions.addEventListener("click", (e) => {
-      const tickItem = e.target.closest(".tick-sound-option");
-      if (tickItem) {
-        const tickType = tickItem.dataset.tick;
-
-        // 自動的にスイッチをONにする
-        AlarmSound.setTickSoundType(tickType);
-        updateTickSoundUI(tickType);
-
-        // 再生中の場合、チクタク音を更新（途切れを防ぐため即座に切り替え）
-        const state = TimerState.get();
-        if (state.isRunning && !state.isStopwatch) {
-          AlarmSound.playTickSound();
-        }
-      }
-
-      // チクタク音のテストボタン
-      const tickTestBtn = e.target.closest(".sound-test-btn");
-      if (tickTestBtn && tickTestBtn.dataset.tickTest) {
-        e.preventDefault();
-        e.stopPropagation();
-        const tickType = tickTestBtn.dataset.tickTest;
-        AlarmSound.testTickSound(tickType);
-      }
-    });
-  }
 
   // 初期化
   const init = () => {
     createSoundTypeList();
-    updateTickSoundUI(AlarmSound.getTickSoundType());
 
     // 初期音量を設定
     const initialVolume = parseFloat(volumeSlider.value);
