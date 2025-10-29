@@ -133,14 +133,14 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-        
+
         // alarm_clock.mp3を再生（1秒で停止）
         alarmAudio = new Audio("sound/alarm_clock.mp3");
         alarmAudio.volume = volume;
         alarmAudio.play().catch((error) => {
           console.error("アラーム音の再生エラー:", error);
         });
-        
+
         // 1秒後に停止
         setTimeout(() => {
           if (alarmAudio) {
@@ -203,14 +203,14 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-        
+
         // alarm_gong.mp3を再生（1秒で停止）
         alarmAudio = new Audio("sound/alarm_gong.mp3");
         alarmAudio.volume = volume;
         alarmAudio.play().catch((error) => {
           console.error("ゴング音の再生エラー:", error);
         });
-        
+
         // 1秒後に停止
         setTimeout(() => {
           if (alarmAudio) {
@@ -378,25 +378,29 @@ const AlarmSound = (() => {
 
     console.log(`🔊 アラーム音を再生開始 (種類: ${currentSoundType})`);
     console.log(`📳 バイブレーション設定: ${vibrationEnabled ? "ON" : "OFF"}`);
-    console.log(`📳 navigator.vibrate: ${typeof navigator.vibrate}`);
-    console.log(`📳 ユーザーエージェント: ${navigator.userAgent}`);
 
-    // バイブレーション機能（スマホのみ）
+    // バイブレーション機能（Android専用、iOSでは動作しません）
     if (vibrationEnabled) {
       if ("vibrate" in navigator) {
         try {
           // より強力なバイブレーションパターン
           const pattern = [500, 100, 500, 100, 500];
-          console.log(`📳 バイブレーション実行前...`);
           const vibrated = navigator.vibrate(pattern);
-          console.log(`📳 バイブレーション実行結果: ${vibrated ? "✅ 成功" : "❌ 失敗"}`);
-          console.log(`📳 パターン: [${pattern.join(", ")}]`);
           
+          // iOSの判定
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          if (isIOS) {
+            console.log("ℹ️ iOSではバイブレーション機能は動作しません（制限あり）");
+          } else {
+            console.log(
+              `📳 バイブレーション実行: ${vibrated ? "✅ 成功" : "❌ 失敗"}`
+            );
+          }
+
           // さらに長いバイブレーション（2秒間）
           setTimeout(() => {
-            if (vibrationEnabled) {
+            if (vibrationEnabled && !isIOS) {
               navigator.vibrate(1000);
-              console.log(`📳 追加バイブレーション: 1000ms`);
             }
           }, 1500);
         } catch (err) {
@@ -2216,39 +2220,21 @@ const MinimalMode = (() => {
             })
             .catch((err) => {
               console.log("ℹ️ 画面の向きロック:", err.name);
-              
+
               // NotSupportedErrorは正常（iOS等では未対応）なのでエラーログ出力しない
               if (err.name !== "NotSupportedError") {
                 console.warn("⚠️ 画面の向きロック失敗:", err.message);
               }
 
-              // 縦画面の場合のみ、横向きを促すメッセージ
-              if (window.innerWidth < window.innerHeight) {
-                setTimeout(() => {
-                  if (isMinimalMode) {
-                    alert(
-                      "📱 画面を横向きにすると、より見やすくなります"
-                    );
-                  }
-                }, 500);
-              }
+              // iOS等では画面の向きを自動制御できないため、アラートは表示しない
+              // ユーザーが手動で横向きにすることで最適な表示になる
+              console.log("💡 画面を横向きにすると、より見やすくなります");
             });
         } else {
           console.log(
-            "⚠️ screen.orientation.lock()はサポートされていません（iOS）"
+            "ℹ️ screen.orientation.lock()はサポートされていません（iOS制限）"
           );
-          console.log("💡 iOSでは画面の自動回転に対応していません");
-
-          // iOSの場合、手動で横向きにするよう促す（1回のみ）
-          if (window.innerWidth < window.innerHeight) {
-            setTimeout(() => {
-              if (isMinimalMode) {
-                alert(
-                  "📱 画面を横向きにすると、より見やすくなります\n\n※手動で画面を回転させてください"
-                );
-              }
-            }, 300);
-          }
+          console.log("💡 画面を横向きにすると、より見やすくなります");
         }
       } catch (err) {
         console.error("❌ 画面の向きロックエラー:", err);
@@ -4524,25 +4510,30 @@ const SoundSettings = (() => {
 
     // スマホの場合、消音モードを判定して音量をデフォルト設定
     let initialVolume = parseFloat(volumeSlider.value);
-    
+
     if (window.innerWidth <= 768) {
       // スマホの場合、消音モード判定を試みる
-      const testAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+      const testAudio = new Audio(
+        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
+      );
       testAudio.volume = 0.1;
-      
-      testAudio.play().then(() => {
-        testAudio.pause();
-        console.log("✅ 音声再生可能（消音モードOFF）");
-      }).catch((error) => {
-        console.log("🔇 消音モード検出：音量を無音に設定");
-        // 消音モードの場合、音量を0に設定
-        initialVolume = 0;
-        volumeSlider.value = 0;
-        AlarmSound.setVolume(0);
-        volumeDisplay.textContent = "無音";
-      });
+
+      testAudio
+        .play()
+        .then(() => {
+          testAudio.pause();
+          console.log("✅ 音声再生可能（消音モードOFF）");
+        })
+        .catch((error) => {
+          console.log("🔇 消音モード検出：音量を無音に設定");
+          // 消音モードの場合、音量を0に設定
+          initialVolume = 0;
+          volumeSlider.value = 0;
+          AlarmSound.setVolume(0);
+          volumeDisplay.textContent = "無音";
+        });
     }
-    
+
     // 音量設定
     AlarmSound.setVolume(initialVolume);
     if (initialVolume === 0) {
@@ -4564,7 +4555,7 @@ const SoundSettings = (() => {
       vibrationToggle.addEventListener("change", (e) => {
         const enabled = e.target.checked;
         vibrationLabel.textContent = enabled ? "ON" : "OFF";
-        
+
         // バイブレーション設定を保存
         AlarmSound.setVibration(enabled);
         console.log(`📳 バイブレーション設定変更: ${enabled ? "ON" : "OFF"}`);
@@ -4574,7 +4565,9 @@ const SoundSettings = (() => {
           try {
             const testPattern = [200, 100, 200];
             const result = navigator.vibrate(testPattern);
-            console.log(`📳 テストバイブレーション: ${result ? "✅ 成功" : "❌ 失敗"}`);
+            console.log(
+              `📳 テストバイブレーション: ${result ? "✅ 成功" : "❌ 失敗"}`
+            );
           } catch (err) {
             console.error("❌ テストバイブレーションエラー:", err);
           }
