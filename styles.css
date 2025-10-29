@@ -1176,8 +1176,8 @@ body.minimal-mode .center-display {
     right: auto !important;
     transform: translateX(-50%) !important;
     border-radius: 25px 25px 0 0 !important;
-    width: 60px !important; /* 80px → 60px に縮小 */
-    height: 40px !important; /* 50px → 40px に縮小 */
+    width: 70px !important; /* 80px → 60px に縮小 */
+    height: 55px !important; /* 50px → 40px に縮小 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1219,7 +1219,7 @@ body.minimal-mode .center-display {
     width: 36px !important;
     height: 36px !important;
     font-size: 1em !important;
-    bottom: 12px !important;
+    bottom: 20px !important;
     left: 12px !important;
     padding: 6px !important;
     border-radius: 6px !important;
@@ -2447,7 +2447,7 @@ input[type="number"]::-webkit-inner-spin-button {
     height: 48px;
     font-size: 18px;
     right: 68px; /* デザインFABの左側に配置 */
-    bottom: 12px;
+    bottom: 15px;
     /* クリック判定エリアを確保 */
     min-width: 48px;
     min-height: 48px;
@@ -2622,7 +2622,7 @@ input[type="number"]::-webkit-inner-spin-button {
     height: 44px; /* 48px → 44px */
     font-size: 16px; /* 18px → 16px */
     right: 10px; /* 12px → 10px */
-    bottom: 10px; /* 12px → 10px */
+    bottom: 15px; /* 12px → 10px */
     /* クリック判定エリアを確保 */
     min-width: 44px;
     min-height: 44px;
