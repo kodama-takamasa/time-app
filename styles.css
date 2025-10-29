@@ -719,96 +719,6 @@ body {
   color: var(--fg);
 }
 
-/* バイブレーション設定 - スイッチデザイン（スマホのみ表示） */
-#vibrationSection {
-  display: none !important;
-}
-
-/* スマホ（タッチデバイス）でのみ表示 */
-@media (max-width: 768px) {
-  #vibrationSection {
-    display: block !important;
-  }
-}
-
-.vibration-switch-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.vibration-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-}
-
-.vibration-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.vibration-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  transition: 0.3s;
-  border-radius: 26px;
-  border: 1px solid var(--fg);
-}
-
-.vibration-slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: var(--fg);
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-.vibration-switch input:checked + .vibration-slider {
-  background-color: var(--fg);
-}
-
-.vibration-switch input:checked + .vibration-slider:before {
-  transform: translateX(24px);
-  background-color: var(--bg);
-}
-
-.vibration-switch-label {
-  font-size: 14px;
-  color: var(--fg);
-  font-weight: 500;
-}
-
-.design-card.light .vibration-slider {
-  border-color: #999;
-}
-
-.design-card.light .vibration-slider:before {
-  background-color: #999;
-}
-
-.design-card.light .vibration-switch input:checked + .vibration-slider {
-  background-color: #000;
-}
-
-.design-card.light .vibration-switch input:checked + .vibration-slider:before {
-  background-color: #fff;
-}
-
-.design-card.light .vibration-switch-label {
-  color: #111;
-}
 
 .tick-sound-options {
   display: flex;
@@ -1176,6 +1086,13 @@ body.minimal-mode .center-display {
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
+}
+
+/* スマホ横向き時：より大きく表示 */
+@media (max-width: 926px) and (orientation: landscape) {
+  body.minimal-mode #display {
+    transform: scale(1.5) !important;
+  }
 }
 
 /* ミニマルモード時のアイコン回転は不要（アイコン自体を変更するため） */

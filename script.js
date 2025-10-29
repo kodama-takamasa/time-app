@@ -78,8 +78,6 @@ const AlarmSound = (() => {
   let lastPlayTime = 0;
   let volume = 0.5; // デフォルト音量
   let currentSoundType = "beep"; // 現在の音声種類
-  let vibrationEnabled = true; // バイブレーション有効フラグ
-  let silentModeWarningShown = false; // 消音モード警告表示済みフラグ
 
   // 音声種類の定義
   const SOUND_TYPES = {
@@ -377,41 +375,6 @@ const AlarmSound = (() => {
     lastPlayTime = now;
 
     console.log(`🔊 アラーム音を再生開始 (種類: ${currentSoundType})`);
-    console.log(`📳 バイブレーション設定: ${vibrationEnabled ? "ON" : "OFF"}`);
-
-    // バイブレーション機能（Android専用、iOSでは動作しません）
-    if (vibrationEnabled) {
-      if ("vibrate" in navigator) {
-        try {
-          // より強力なバイブレーションパターン
-          const pattern = [500, 100, 500, 100, 500];
-          const vibrated = navigator.vibrate(pattern);
-          
-          // iOSの判定
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          if (isIOS) {
-            console.log("ℹ️ iOSではバイブレーション機能は動作しません（制限あり）");
-          } else {
-            console.log(
-              `📳 バイブレーション実行: ${vibrated ? "✅ 成功" : "❌ 失敗"}`
-            );
-          }
-
-          // さらに長いバイブレーション（2秒間）
-          setTimeout(() => {
-            if (vibrationEnabled && !isIOS) {
-              navigator.vibrate(1000);
-            }
-          }, 1500);
-        } catch (err) {
-          console.error("❌ バイブレーションエラー:", err);
-        }
-      } else {
-        console.log("⚠️ このデバイスはバイブレーションAPIに対応していません");
-      }
-    } else {
-      console.log("📳 バイブレーション機能はOFFに設定されています");
-    }
 
     // 現在選択されている音声種類で再生
     const soundType = SOUND_TYPES[currentSoundType];
@@ -520,18 +483,6 @@ const AlarmSound = (() => {
     }
   };
 
-  // バイブレーション設定
-  const setVibration = (enabled) => {
-    vibrationEnabled = enabled;
-    console.log(`📳 バイブレーション: ${enabled ? "ON" : "OFF"}`);
-  };
-
-  const getVibration = () => vibrationEnabled;
-
-  // バイブレーション対応チェック
-  const isVibrationSupported = () => {
-    return "vibrate" in navigator;
-  };
 
   return {
     playAlarm,
@@ -543,9 +494,6 @@ const AlarmSound = (() => {
     setSoundType,
     getSoundType,
     getSoundTypes,
-    setVibration,
-    getVibration,
-    isVibrationSupported,
   };
 })();
 
@@ -4385,13 +4333,6 @@ const SoundSettings = (() => {
       soundTypeRadio.checked = true;
     }
 
-    // バイブレーション設定を適用
-    const vibrationToggle = document.getElementById("vibrationToggle");
-    const vibrationLabel = document.querySelector(".vibration-switch-label");
-    if (vibrationToggle && vibrationLabel) {
-      vibrationToggle.checked = snapshot.vibration;
-      vibrationLabel.textContent = snapshot.vibration ? "ON" : "OFF";
-    }
   };
 
   // モーダルを開く
@@ -4424,12 +4365,9 @@ const SoundSettings = (() => {
     const soundType =
       document.querySelector('input[name="soundType"]:checked')?.value ||
       "beep";
-    const vibrationToggle = document.getElementById("vibrationToggle");
-    const vibration = vibrationToggle ? vibrationToggle.checked : true;
 
     AlarmSound.setVolume(volume);
     AlarmSound.setSoundType(soundType);
-    AlarmSound.setVibration(vibration);
 
     close();
   };
@@ -4448,31 +4386,15 @@ const SoundSettings = (() => {
   applyButton.addEventListener("click", apply);
 
   // 音量スライダー
-  let previousVolume = parseFloat(volumeSlider.value);
-  let silentModeAlertShown = false;
-
   volumeSlider.addEventListener("input", () => {
     const volume = parseFloat(volumeSlider.value);
-    const wasZero = previousVolume === 0;
 
     AlarmSound.setVolume(volume);
     if (volume === 0) {
       volumeDisplay.textContent = "無音";
     } else {
       volumeDisplay.textContent = `${Math.round(volume * 100)}%`;
-
-      // 音量を0から上げた時、スマホのみアラート表示
-      if (wasZero && !silentModeAlertShown && window.innerWidth <= 768) {
-        silentModeAlertShown = true;
-        setTimeout(() => {
-          alert(
-            "🔇 消音モードの確認\n\nスマホが消音モードになっている場合、音声は再生されません。\n\n消音モードを解除してください。\n（バイブレーション機能は動作します）"
-          );
-        }, 100);
-      }
     }
-
-    previousVolume = volume;
   });
 
   // スピーカーアイコンクリック時の音声テスト
@@ -4542,38 +4464,6 @@ const SoundSettings = (() => {
       volumeDisplay.textContent = `${Math.round(initialVolume * 100)}%`;
     }
 
-    // バイブレーション機能の初期化
-    const vibrationToggle = document.getElementById("vibrationToggle");
-    const vibrationLabel = document.querySelector(".vibration-switch-label");
-
-    if (vibrationToggle && vibrationLabel) {
-      // バイブレーション対応デバイスの場合のみ表示（CSSで制御）
-      if (AlarmSound.isVibrationSupported()) {
-        console.log("📳 バイブレーション機能が利用可能です");
-      }
-
-      vibrationToggle.addEventListener("change", (e) => {
-        const enabled = e.target.checked;
-        vibrationLabel.textContent = enabled ? "ON" : "OFF";
-
-        // バイブレーション設定を保存
-        AlarmSound.setVibration(enabled);
-        console.log(`📳 バイブレーション設定変更: ${enabled ? "ON" : "OFF"}`);
-
-        // テストバイブレーション（強力なパターン）
-        if (enabled && "vibrate" in navigator) {
-          try {
-            const testPattern = [200, 100, 200];
-            const result = navigator.vibrate(testPattern);
-            console.log(
-              `📳 テストバイブレーション: ${result ? "✅ 成功" : "❌ 失敗"}`
-            );
-          } catch (err) {
-            console.error("❌ テストバイブレーションエラー:", err);
-          }
-        }
-      });
-    }
   };
 
   // DOMContentLoadedで初期化
