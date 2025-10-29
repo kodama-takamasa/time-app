@@ -719,7 +719,6 @@ body {
   color: var(--fg);
 }
 
-
 .tick-sound-options {
   display: flex;
   gap: 8px;

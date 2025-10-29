@@ -483,7 +483,6 @@ const AlarmSound = (() => {
     }
   };
 
-
   return {
     playAlarm,
     stopAlarm,
@@ -4312,7 +4311,6 @@ const SoundSettings = (() => {
     return {
       volume: AlarmSound.getVolume(),
       soundType: AlarmSound.getSoundType(),
-      vibration: AlarmSound.getVibration(),
     };
   };
 
@@ -4332,7 +4330,6 @@ const SoundSettings = (() => {
     if (soundTypeRadio) {
       soundTypeRadio.checked = true;
     }
-
   };
 
   // モーダルを開く
@@ -4463,7 +4460,6 @@ const SoundSettings = (() => {
     } else {
       volumeDisplay.textContent = `${Math.round(initialVolume * 100)}%`;
     }
-
   };
 
   // DOMContentLoadedで初期化
