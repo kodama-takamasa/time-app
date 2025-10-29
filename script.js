@@ -386,13 +386,11 @@ const AlarmSound = (() => {
     const soundType = SOUND_TYPES[currentSoundType];
     if (soundType) {
       soundType.play(volume);
-      // 音声種類によって再生時間が異なるため、各音の最大再生時間を確保
-      // bell音: 500+400+400+300+600=2200ms, gong: 300+150+300+150+400=1300ms
-      // その他は短めなので2500msで十分な余裕を持たせる
+      // アラーム音を1秒に統一
       setTimeout(() => {
         isPlaying = false; // 再生完了後にフラグをリセット
         console.log("🔊 アラーム音再生完了");
-      }, 2500); // すべての音に対応できる十分な時間を確保
+      }, 1000); // 1秒でアラーム音終了
     }
   };
 
@@ -439,12 +437,12 @@ const AlarmSound = (() => {
   const setVolume = (newVolume) => {
     volume = Math.max(0, Math.min(1, newVolume)); // 0-1の範囲に制限
     console.log(`🔊 音量を${Math.round(volume * 100)}%に設定`);
-    
+
     // テスト音声が再生中の場合、リアルタイムで音量を更新
     if (testAudio) {
       testAudio.volume = volume;
     }
-    
+
     // アラーム音が再生中の場合も音量を更新
     if (alarmAudio) {
       alarmAudio.volume = volume;
@@ -2153,50 +2151,67 @@ const MinimalMode = (() => {
       }
 
       // フルスクリーンモードを試みる（サポートされている場合）
+      console.log("🖥️ フルスクリーンを試みます...");
       try {
         if (document.documentElement.requestFullscreen) {
           await document.documentElement.requestFullscreen();
+          console.log("✅ フルスクリーンモードに切り替えました");
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          // iOS Safari対応
+          await document.documentElement.webkitRequestFullscreen();
+          console.log("✅ フルスクリーンモードに切り替えました（webkit）");
+        } else {
+          console.log("⚠️ フルスクリーンAPIはサポートされていません");
         }
       } catch (err) {
-        console.log("フルスクリーンモードはサポートされていません", err);
+        console.log("⚠️ フルスクリーンモードエラー:", err);
       }
 
       // 画面の向きを横向きにロック（サポートされている場合）
       console.log("🔄 画面の向き制御を試みます...");
-      console.log("📱 現在の画面サイズ:", window.innerWidth, "x", window.innerHeight);
+      console.log(
+        "📱 現在の画面サイズ:",
+        window.innerWidth,
+        "x",
+        window.innerHeight
+      );
       console.log("📱 screen.orientation:", screen.orientation);
       console.log("📱 フルスクリーン状態:", !!document.fullscreenElement);
-      
+
       try {
         if (screen.orientation && screen.orientation.lock) {
           console.log("🔒 orientation.lock('landscape')を実行します...");
-          
-          await screen.orientation.lock("landscape")
+
+          await screen.orientation
+            .lock("landscape")
             .then(() => {
               console.log("✅ 画面を横向きにロックしました");
             })
             .catch((err) => {
               console.warn("⚠️ 画面の向きロックに失敗:", err.name, err.message);
-              
+
               // ロックできない場合、ユーザーに画面を回転するよう促す
               if (window.innerWidth < window.innerHeight) {
                 setTimeout(() => {
                   if (isMinimalMode) {
-                    alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります\n\n※一部のブラウザでは画面の自動回転に対応していません");
+                    alert(
+                      "📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります\n\n※一部のブラウザでは画面の自動回転に対応していません"
+                    );
                   }
                 }, 500);
               }
             });
         } else {
-          console.log("⚠️ screen.orientation.lock()はサポートされていません");
+          console.log("⚠️ screen.orientation.lock()はサポートされていません（iOS）");
+          console.log("💡 iOSでは画面の自動回転に対応していません");
           
-          // screen.orientationがサポートされていない場合もメッセージ表示
+          // iOSの場合、手動で横向きにするよう促す（1回のみ）
           if (window.innerWidth < window.innerHeight) {
             setTimeout(() => {
               if (isMinimalMode) {
-                alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります");
+                alert("📱 画面を横向きにすると、より見やすくなります\n\n※手動で画面を回転させてください");
               }
-            }, 500);
+            }, 300);
           }
         }
       } catch (err) {
@@ -2211,9 +2226,14 @@ const MinimalMode = (() => {
       try {
         if (document.fullscreenElement && document.exitFullscreen) {
           await document.exitFullscreen();
+          console.log("✅ フルスクリーンモードを解除しました");
+        } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+          // iOS Safari対応
+          await document.webkitExitFullscreen();
+          console.log("✅ フルスクリーンモードを解除しました（webkit）");
         }
       } catch (err) {
-        console.log("フルスクリーン解除エラー", err);
+        console.log("⚠️ フルスクリーン解除エラー", err);
       }
 
       // 画面の向きロックを解除
@@ -4402,9 +4422,7 @@ const SoundSettings = (() => {
   cancelButton.addEventListener("click", cancel);
   applyButton.addEventListener("click", apply);
 
-  // 音量スライダー（リアルタイム音声テスト付き）
-  let volumeTestTimeout = null;
-  let lastVolumeTestTime = 0;
+  // 音量スライダー
   let previousVolume = parseFloat(volumeSlider.value);
   let silentModeAlertShown = false;
 
@@ -4418,8 +4436,8 @@ const SoundSettings = (() => {
     } else {
       volumeDisplay.textContent = `${Math.round(volume * 100)}%`;
 
-      // 音量を0から上げた時、1回だけアラート表示
-      if (wasZero && !silentModeAlertShown) {
+      // 音量を0から上げた時、スマホのみアラート表示
+      if (wasZero && !silentModeAlertShown && window.innerWidth <= 768) {
         silentModeAlertShown = true;
         setTimeout(() => {
           alert(
@@ -4430,25 +4448,6 @@ const SoundSettings = (() => {
     }
 
     previousVolume = volume;
-
-    // リアルタイム音声テスト（スライダー操作中）
-    const now = Date.now();
-    if (now - lastVolumeTestTime > 300) {
-      // 300ms以上間隔を空ける
-      lastVolumeTestTime = now;
-
-      // 前のテストをキャンセル
-      if (volumeTestTimeout) {
-        clearTimeout(volumeTestTimeout);
-      }
-
-      // 少し遅延させて音声テスト
-      volumeTestTimeout = setTimeout(() => {
-        if (volume > 0) {
-          AlarmSound.testSound();
-        }
-      }, 100);
-    }
   });
 
   // スピーカーアイコンクリック時の音声テスト
@@ -4529,12 +4528,15 @@ const initAudioOnFirstInteraction = () => {
     try {
       const dummyAudio = new Audio();
       dummyAudio.volume = 0;
-      dummyAudio.play().then(() => {
-        dummyAudio.pause();
-        console.log("🎵 ユーザー操作により音声を有効化");
-      }).catch(() => {
-        // エラーは無視
-      });
+      dummyAudio
+        .play()
+        .then(() => {
+          dummyAudio.pause();
+          console.log("🎵 ユーザー操作により音声を有効化");
+        })
+        .catch(() => {
+          // エラーは無視
+        });
     } catch (err) {
       // エラーは無視
     }
