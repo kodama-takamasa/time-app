@@ -377,7 +377,6 @@ const AlarmSound = (() => {
     }
   };
 
-
   // 音量設定関数
   const setVolume = (newVolume) => {
     volume = Math.max(0, Math.min(1, newVolume)); // 0-1の範囲に制限
@@ -4177,7 +4176,6 @@ const SoundSettings = (() => {
     });
   };
 
-
   // スナップショットを作成
   const createSnapshot = () => {
     return {
@@ -4293,7 +4291,6 @@ const SoundSettings = (() => {
       cancel();
     }
   });
-
 
   // 初期化
   const init = () => {

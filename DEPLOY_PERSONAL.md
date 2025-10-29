@@ -137,8 +137,8 @@ chmod +x start-timer-wifi.command
 cd "/Users/kodamatakamasa/Desktop/web事業/制作サイト/00：作成/00test/timer_stopwatch/timer_stop"
 
 # Gitの初期設定（初回のみ）
-git config --global user.name "あなたの名前"
-git config --global user.email "あなたのメールアドレス"
+git config --global user.name "kodama-takamasa"
+git config --global user.email "gs.kodamaoffice@gmail.com"
 
 # リポジトリの初期化
 git init
@@ -147,7 +147,7 @@ git commit -m "Initial commit"
 git branch -M main
 
 # GitHubにプッシュ（ユーザー名を置き換え）
-git remote add origin https://github.com/ユーザー名/timer-app.git
+git remote add origin https://github.com/kodama-takamasa/time-app.git
 git push -u origin main
 ```
 

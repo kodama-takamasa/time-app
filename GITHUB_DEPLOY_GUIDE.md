@@ -21,17 +21,17 @@ GitHub のリポジトリページで以下を確認してください：
 
 2. **リポジトリ名**
 
-   - 例：`timer-app`（作成時に入力した名前）
+   - 例：`time-app`
 
 3. **リポジトリの URL**
-   - 例：`https://github.com/kodama-takamasa/timer-app`
+   - 例：`https://github.com/kodama-takamasa/time-app`
 
 ### 📸 スクリーンショット参考
 
 リポジトリページの上部に表示されています：
 
 ```
-kodama-takamasa / timer-app
+kodama-takamasa / time-app
 ```
 
 ---
@@ -198,7 +198,7 @@ git remote add origin https://github.com/あなたのユーザー名/あなた�
 **例（あなたの場合）：**
 
 ```bash
-git remote add origin https://github.com/kodama-takamasa/timer-app.git
+git remote add origin https://github.com/kodama-takamasa/time-app.git
 ```
 
 ### 7-2. 接続を確認
