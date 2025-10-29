@@ -1027,12 +1027,6 @@ body.minimal-mode .minimal-toggle {
   border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
 }
 
-/* ミニマルモード時：横向き表示推奨 */
-body.minimal-mode {
-  /* スマホで横向き（landscape）を推奨 */
-  orientation: landscape;
-}
-
 /* ミニマルモード時：時間表示を大きく */
 body.minimal-mode #display {
   font-size: min(20vw, 30vh) !important;
