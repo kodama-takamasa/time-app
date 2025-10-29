@@ -660,6 +660,26 @@ body {
   border: none;
 }
 
+/* ライトモード時の表示サイズスライダー */
+.design-card.light .display-size-slider {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.design-card.light .display-size-slider::-webkit-slider-thumb {
+  background: #000;
+  border: 2px solid #000;
+}
+
+.design-card.light .display-size-slider::-moz-range-thumb {
+  background: #000;
+  border: 2px solid #000;
+}
+
+.design-card.light .display-size-slider::-moz-range-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 /* 音声設定モーダルのスタイル */
 #soundModal .sound-type-list {
   display: grid;
@@ -847,6 +867,35 @@ body {
 #soundModal .design-row:has(input[type="range"]) input[type="range"] {
   width: 100%;
   min-width: 280px;
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.2);
+}
+
+#soundModal.design-card.light
+  .design-row:has(input[type="range"])
+  input[type="range"] {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* ライトモード時の音量スライダーのつまみ */
+.design-card.light input[type="range"]::-webkit-slider-thumb {
+  background: #000;
+  border: 2px solid #000;
+}
+
+.design-card.light input[type="range"]::-moz-range-thumb {
+  background: #000;
+  border: 2px solid #000;
+}
+
+/* ライトモード時の音声種類ラベルとテストボタン */
+.design-card.light .design-section-title {
+  color: #000;
+  border-bottom-color: rgba(0, 0, 0, 0.2);
+}
+
+.design-card.light #soundVolumeDisplay {
+  color: #000;
 }
 
 /* レスポンシブ対応：常に2列グリッド表示を維持 */
@@ -917,9 +966,73 @@ body {
   /* スクロールバーの幅を考慮したパディング調整 */
   padding-right: 4px;
   box-sizing: border-box;
+  color: var(--fg);
 }
 .side-menu.open {
   right: 0;
+}
+
+/* サイドメニューのライトモード */
+.side-menu.light {
+  background: #f7f7f7;
+  color: #111;
+  border-left-color: #999;
+}
+
+.side-menu.light .section-label {
+  color: #111;
+}
+
+.side-menu.light .timer-options button {
+  border-color: #999;
+  color: #111;
+}
+
+.side-menu.light .timer-options button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: #000;
+}
+
+.side-menu.light .timer-options button.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.side-menu.light .custom-time input {
+  border-color: #999;
+  color: #111;
+}
+
+.side-menu.light .custom-time input:focus {
+  border-color: #000;
+}
+
+.side-menu.light .custom-time-apply {
+  background: #fff;
+  color: #111;
+  border-color: #999;
+}
+
+.side-menu.light .custom-time-apply:hover {
+  background: #f0f0f0;
+  border-color: #666;
+}
+
+.side-menu.light .custom-time-apply.active {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.side-menu.light .num-wrap .step {
+  border-color: #999;
+  color: #111;
+}
+
+.side-menu.light .num-wrap .step:hover {
+  background: #000;
+  color: #fff;
 }
 .menu-toggle {
   position: fixed;
@@ -1041,12 +1154,34 @@ body.minimal-mode .center-display {
   align-items: center !important;
 }
 
-body.minimal-mode #display {
-  /* デザイン設定のサイズをそのまま継承 */
-  /* transform や font-size の上書きなし */
-}
-
 /* ミニマルモード時のアイコン回転は不要（アイコン自体を変更するため） */
+
+/* スマホ画面最下部にボーダーライン（クリックしやすく） */
+@media (max-width: 768px) {
+  body::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(
+      to top,
+      var(--fg) 0%,
+      var(--fg) 30%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 10000;
+    opacity: 0.4;
+    box-shadow: 0 -1px 5px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
+  }
+
+  /* ミニマルモード時は非表示 */
+  body.minimal-mode::after {
+    display: none;
+  }
+}
 
 /* レスポンシブ対応：狭い画面では下から上に開くメニュー */
 @media (max-width: 768px) {
@@ -1072,6 +1207,10 @@ body.minimal-mode #display {
     overflow-y: auto !important;
   }
 
+  .side-menu.light {
+    border-top-color: #999 !important;
+  }
+
   .side-menu.open {
     bottom: 0 !important;
     right: 0 !important;
@@ -1086,7 +1225,7 @@ body.minimal-mode #display {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.025);
     z-index: -1;
   }
 
@@ -1778,6 +1917,46 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 20px;
   opacity: 0.6;
   font-size: 0.9em;
+}
+
+/* サイドメニューライトモード - アラーム設定 */
+.side-menu.light .alarm-repeat-setting {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.side-menu.light .alarm-repeat-label {
+  color: #111;
+}
+
+.side-menu.light .alarm-repeat-option {
+  color: #111;
+}
+
+.side-menu.light .alarm-repeat-option input[type="radio"] {
+  accent-color: #000;
+}
+
+.side-menu.light .alarm-item {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #111;
+}
+
+.side-menu.light .alarm-item:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: #000;
+}
+
+.side-menu.light .alarm-delete {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: #111;
+}
+
+.side-menu.light .alarm-delete:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
 }
 
 /* サーキットタイトル */
@@ -2598,15 +2777,17 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 6px 30px 6px 6px;
 }
 
-/* デザイン設定のレスポンシブ対応 */
-.palette-list {
-  gap: 6px;
-  padding: 6px;
-}
+/* デザイン設定のレスポンシブ対応（480px以下の場合のみ適用） */
+@media (max-width: 480px) {
+  .palette-list {
+    gap: 6px;
+    padding: 6px;
+  }
 
-.palette {
-  padding: 3px 6px;
-  gap: 4px;
+  .palette {
+    padding: 3px 6px;
+    gap: 4px;
+  }
 }
 
 .sound-type-list {
@@ -3253,10 +3434,39 @@ input[type="number"]::-webkit-inner-spin-button {
   gap: 8px;
   padding: 8px;
 }
-.palette-list.grid2 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+
+/* スマホでは3行2列に変更 */
+@media (max-width: 768px) {
+  .palette-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  /* 背景がblackでもスマホでは2列表示 */
+  .palette-list.grid2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .palette {
+    padding: 6px 10px;
+  }
+
+  .palette .swatch {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* デスクトップではgrid2で3列表示 */
+@media (min-width: 769px) {
+  .palette-list.grid2 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
 }
 .palette {
   display: flex;
@@ -3845,6 +4055,103 @@ input[type="number"]::-webkit-inner-spin-button {
   border: 1px solid rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3);
   border-radius: 10px;
   pointer-events: none;
+}
+
+/* ライトモード時のデジタル時計 */
+@media (prefers-color-scheme: light), (min-width: 0px) {
+  body:has(#display[style*="--bg: #fff"]) .digital-clock,
+  body:has(#display[style*="--bg: #ffffff"]) .digital-clock,
+  body:has(#display[style*="--bg: rgb(255"]) .digital-clock {
+    background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+  }
+
+  body:has(#display[style*="--bg: #fff"]) .clock-face,
+  body:has(#display[style*="--bg: #ffffff"]) .clock-face,
+  body:has(#display[style*="--bg: rgb(255"]) .clock-face {
+    background: linear-gradient(45deg, #fff, #f5f5f5);
+  }
+}
+
+/* より確実なライトモード対応（背景色が明るい時） */
+body[style*="background: rgb(255"] .digital-clock,
+body[style*="background: #fff"] .digital-clock,
+body[style*="background: #ffffff"] .digital-clock {
+  background: linear-gradient(135deg, #f0f0f0, #e0e0e0) !important;
+}
+
+body[style*="background: rgb(255"] .clock-face,
+body[style*="background: #fff"] .clock-face,
+body[style*="background: #ffffff"] .clock-face {
+  background: linear-gradient(45deg, #fff, #f5f5f5) !important;
+}
+
+/* アラートカードのライトモード */
+.alert-card.light {
+  background: linear-gradient(135deg, #ffffff, rgba(0, 0, 0, 0.05)) !important;
+  border-color: #000 !important;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3), 0 0 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.alert-card.light .digital-clock {
+  background: linear-gradient(135deg, #f0f0f0, #e0e0e0) !important;
+  border-color: #000 !important;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.alert-card.light .clock-face {
+  background: linear-gradient(45deg, #fff, #f5f5f5) !important;
+}
+
+.alert-card.light .clock-digits {
+  color: #000 !important;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+.alert-card.light .alert-title {
+  color: #000 !important;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.alert-card.light .alert-message {
+  color: #000 !important;
+}
+
+.alert-card.light .alert-button {
+  background: #000 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.alert-card.light .alert-button:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 現在時刻モーダルのライトモード */
+.time-card.light {
+  background: linear-gradient(135deg, #ffffff, rgba(0, 0, 0, 0.05)) !important;
+  border-color: #000 !important;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.3), 0 0 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.time-card.light .time-display {
+  color: #000 !important;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 0, 0, 0.2) !important;
+}
+
+.time-card.light .time-date {
+  color: #000 !important;
+}
+
+.time-card.light .time-close-button {
+  background: #000 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+.time-card.light .time-close-button:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 @keyframes clockPulse {

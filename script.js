@@ -200,6 +200,24 @@ const AlarmSound = (() => {
     if (audioContext.state === "suspended") {
       audioContext.resume();
     }
+
+    // スマホ対応：ダミー音声でアンロック
+    try {
+      const dummyAudio = new Audio();
+      dummyAudio.volume = 0;
+      dummyAudio
+        .play()
+        .then(() => {
+          dummyAudio.pause();
+          console.log("✅ 音声コンテキストを初期化しました");
+        })
+        .catch(() => {
+          // エラーは無視
+        });
+    } catch (err) {
+      // エラーは無視
+    }
+
     return audioContext;
   };
 
@@ -320,26 +338,6 @@ const AlarmSound = (() => {
     oscillator.stop(ctx.currentTime + duration / 1000);
   };
 
-  // 音声コンテキストを初期化（スマホの自動再生ポリシー対策）
-  const initAudioContext = () => {
-    if (audioContextInitialized) return;
-    
-    try {
-      // ダミー音声を再生して音声コンテキストをアンロック
-      const dummyAudio = new Audio();
-      dummyAudio.volume = 0;
-      dummyAudio.play().then(() => {
-        dummyAudio.pause();
-        audioContextInitialized = true;
-        console.log("✅ 音声コンテキストを初期化しました");
-      }).catch(() => {
-        // エラーは無視（次回のユーザー操作で再試行）
-      });
-    } catch (err) {
-      // エラーは無視
-    }
-  };
-
   const playAlarm = () => {
     const now = Date.now();
     // 500ms以内の重複呼び出しを防ぐ
@@ -453,7 +451,6 @@ const AlarmSound = (() => {
     setSoundType,
     getSoundType,
     getSoundTypes,
-    initAudioContext,
   };
 })();
 
@@ -2465,6 +2462,29 @@ const DesignSettings = (() => {
 
   const updateModalTheme = () => {
     card.classList.toggle("light", selectedBg === "light");
+
+    // 音声設定モーダルとサイドメニューにも適用
+    const soundModal = document.querySelector("#soundModal .design-card");
+    if (soundModal) {
+      soundModal.classList.toggle("light", selectedBg === "light");
+    }
+
+    const sideMenu = document.getElementById("sideMenu");
+    if (sideMenu) {
+      sideMenu.classList.toggle("light", selectedBg === "light");
+    }
+
+    // アラートモーダル内のカードにも適用
+    const alertCard = document.querySelector("#alertModal .alert-card");
+    if (alertCard) {
+      alertCard.classList.toggle("light", selectedBg === "light");
+    }
+
+    // 現在時刻モーダル内のカードにも適用
+    const timeCard = document.querySelector("#timeModal .time-card");
+    if (timeCard) {
+      timeCard.classList.toggle("light", selectedBg === "light");
+    }
   };
 
   const updateDragHandles = () => {
@@ -4337,10 +4357,8 @@ const SoundSettings = (() => {
 // スマホの自動再生ポリシー対策：最初のユーザー操作で音声を有効化
 const initAudioOnFirstInteraction = () => {
   const initAudio = () => {
-    AlarmSound.initAudioContext();
-    // 一度初期化したらイベントリスナーを削除
-    document.removeEventListener("click", initAudio);
-    document.removeEventListener("touchstart", initAudio);
+    // SOUND_TYPESモジュール内のinitAudioContextを呼び出し
+    SOUND_TYPES.initAudioContext();
     console.log("🎵 ユーザー操作により音声を有効化");
   };
 
