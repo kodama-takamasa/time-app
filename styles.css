@@ -1027,37 +1027,23 @@ body.minimal-mode .minimal-toggle {
   border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
 }
 
-/* ミニマルモード時：時間表示を大きく */
-body.minimal-mode #display {
-  font-size: min(20vw, 30vh) !important;
-  transform: scale(1.5) !important;
-  margin: 0 auto !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 100vh !important;
-}
-
-/* ミニマルモード時：ディスプレイを中央に配置 */
-body.minimal-mode .display-wrapper {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+/* ミニマルモード時：表示を中央に配置（サイズは継承） */
+body.minimal-mode .center-display {
   height: 100vh !important;
   width: 100vw !important;
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  background: var(--bg) !important;
   z-index: 999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
-/* ミニマルモード時：横向きで最適化 */
-@media screen and (orientation: landscape) {
-  body.minimal-mode #display {
-    font-size: min(25vw, 40vh) !important;
-    transform: scale(1.8) !important;
-  }
+body.minimal-mode #display {
+  /* デザイン設定のサイズをそのまま継承 */
+  /* transform や font-size の上書きなし */
 }
 
 /* ミニマルモード時のアイコン回転は不要（アイコン自体を変更するため） */

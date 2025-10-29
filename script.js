@@ -320,6 +320,26 @@ const AlarmSound = (() => {
     oscillator.stop(ctx.currentTime + duration / 1000);
   };
 
+  // 音声コンテキストを初期化（スマホの自動再生ポリシー対策）
+  const initAudioContext = () => {
+    if (audioContextInitialized) return;
+    
+    try {
+      // ダミー音声を再生して音声コンテキストをアンロック
+      const dummyAudio = new Audio();
+      dummyAudio.volume = 0;
+      dummyAudio.play().then(() => {
+        dummyAudio.pause();
+        audioContextInitialized = true;
+        console.log("✅ 音声コンテキストを初期化しました");
+      }).catch(() => {
+        // エラーは無視（次回のユーザー操作で再試行）
+      });
+    } catch (err) {
+      // エラーは無視
+    }
+  };
+
   const playAlarm = () => {
     const now = Date.now();
     // 500ms以内の重複呼び出しを防ぐ
@@ -433,6 +453,7 @@ const AlarmSound = (() => {
     setSoundType,
     getSoundType,
     getSoundTypes,
+    initAudioContext,
   };
 })();
 
@@ -4311,3 +4332,25 @@ const SoundSettings = (() => {
 
   return { open, close, apply };
 })();
+
+// ===== スマホ対応：音声コンテキストの初期化 =====
+// スマホの自動再生ポリシー対策：最初のユーザー操作で音声を有効化
+const initAudioOnFirstInteraction = () => {
+  const initAudio = () => {
+    AlarmSound.initAudioContext();
+    // 一度初期化したらイベントリスナーを削除
+    document.removeEventListener("click", initAudio);
+    document.removeEventListener("touchstart", initAudio);
+    console.log("🎵 ユーザー操作により音声を有効化");
+  };
+
+  document.addEventListener("click", initAudio, { once: true });
+  document.addEventListener("touchstart", initAudio, { once: true });
+};
+
+// ページ読み込み時に初期化
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initAudioOnFirstInteraction);
+} else {
+  initAudioOnFirstInteraction();
+}

@@ -1,5 +1,5 @@
 // Service Worker for Timer & Stopwatch PWA
-const CACHE_NAME = "timer-stopwatch-v1.0.0";
+const CACHE_NAME = "timer-stopwatch-v1.0.1";
 const urlsToCache = [
   "./",
   "./index.html",
