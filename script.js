@@ -133,7 +133,7 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-        
+
         // alarm_clock.mp3を再生
         alarmAudio = new Audio("sound/alarm_clock.mp3");
         alarmAudio.volume = volume;
@@ -195,7 +195,7 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-        
+
         // alarm_gong.mp3を再生
         alarmAudio = new Audio("sound/alarm_gong.mp3");
         alarmAudio.volume = volume;
@@ -361,12 +361,25 @@ const AlarmSound = (() => {
     lastPlayTime = now;
 
     console.log(`🔊 アラーム音を再生開始 (種類: ${currentSoundType})`);
+    console.log(`📳 バイブレーション設定: ${vibrationEnabled ? "ON" : "OFF"}`);
+    console.log(`📳 バイブレーション対応: ${navigator.vibrate ? "YES" : "NO"}`);
 
     // バイブレーション機能（スマホのみ）
     if (vibrationEnabled && navigator.vibrate) {
-      // パターン: 振動200ms, 休止100ms, 振動200ms, 休止100ms, 振動300ms
-      navigator.vibrate([200, 100, 200, 100, 300]);
-      console.log("📳 バイブレーション実行");
+      try {
+        // より強いパターン: 振動400ms, 休止200ms, 振動400ms, 休止200ms, 振動600ms
+        const vibrated = navigator.vibrate([400, 200, 400, 200, 600]);
+        console.log(`📳 バイブレーション実行: ${vibrated ? "成功" : "失敗"}`);
+      } catch (err) {
+        console.error("📳 バイブレーションエラー:", err);
+      }
+    } else {
+      if (!vibrationEnabled) {
+        console.log("📳 バイブレーションはOFFに設定されています");
+      }
+      if (!navigator.vibrate) {
+        console.log("📳 このデバイスはバイブレーションに対応していません");
+      }
     }
 
     // 現在選択されている音声種類で再生
@@ -383,37 +396,6 @@ const AlarmSound = (() => {
     }
   };
 
-  // 消音モードチェック（音声再生失敗時にアラート表示）
-  const checkSilentMode = () => {
-    // テスト音声を再生して消音モードをチェック
-    const testAudio = new Audio(
-      "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"
-    );
-    testAudio.volume = 0.1;
-
-    const playPromise = testAudio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          testAudio.pause();
-          console.log("✅ 音声再生可能");
-        })
-        .catch((error) => {
-          console.warn("⚠️ 音声再生エラー:", error);
-
-          // 消音モード警告を表示（1回のみ）
-          if (
-            !silentModeWarningShown &&
-            confirm(
-              "音声が再生できません。\n\nスマホが消音モードになっている可能性があります。\n消音モードを解除してください。\n\n（バイブレーション機能は引き続き動作します）"
-            )
-          ) {
-            silentModeWarningShown = true;
-          }
-        });
-    }
-  };
 
   // テスト用の音声再生関数（実際のアラーム音と同じ）
   const testSound = () => {
@@ -431,7 +413,7 @@ const AlarmSound = (() => {
       console.log("🔇 音量0のため再生をスキップ");
       return;
     }
-    
+
     // alarm/gongの場合は、testAudioで再生（alarmAudioは使わない）
     if (currentSoundType === "alarm") {
       testAudio = new Audio("sound/alarm_clock.mp3");
@@ -523,7 +505,6 @@ const AlarmSound = (() => {
     setSoundType,
     getSoundType,
     getSoundTypes,
-    checkSilentMode,
     setVibration,
     getVibration,
     isVibrationSupported,
@@ -4387,11 +4368,6 @@ const SoundSettings = (() => {
     AlarmSound.setSoundType(soundType);
     AlarmSound.setVibration(vibration);
 
-    // 消音モードチェック（音量が0でない場合のみ）
-    if (volume > 0) {
-      AlarmSound.checkSilentMode();
-    }
-
     close();
   };
 
@@ -4411,26 +4387,41 @@ const SoundSettings = (() => {
   // 音量スライダー（リアルタイム音声テスト付き）
   let volumeTestTimeout = null;
   let lastVolumeTestTime = 0;
-  
+  let previousVolume = parseFloat(volumeSlider.value);
+  let silentModeAlertShown = false;
+
   volumeSlider.addEventListener("input", () => {
     const volume = parseFloat(volumeSlider.value);
+    const wasZero = previousVolume === 0;
+    
     AlarmSound.setVolume(volume);
     if (volume === 0) {
       volumeDisplay.textContent = "無音";
     } else {
       volumeDisplay.textContent = `${Math.round(volume * 100)}%`;
+      
+      // 音量を0から上げた時、1回だけアラート表示
+      if (wasZero && !silentModeAlertShown) {
+        silentModeAlertShown = true;
+        setTimeout(() => {
+          alert("🔇 消音モードの確認\n\nスマホが消音モードになっている場合、音声は再生されません。\n\n消音モードを解除してください。\n（バイブレーション機能は動作します）");
+        }, 100);
+      }
     }
     
+    previousVolume = volume;
+
     // リアルタイム音声テスト（スライダー操作中）
     const now = Date.now();
-    if (now - lastVolumeTestTime > 300) { // 300ms以上間隔を空ける
+    if (now - lastVolumeTestTime > 300) {
+      // 300ms以上間隔を空ける
       lastVolumeTestTime = now;
-      
+
       // 前のテストをキャンセル
       if (volumeTestTimeout) {
         clearTimeout(volumeTestTimeout);
       }
-      
+
       // 少し遅延させて音声テスト
       volumeTestTimeout = setTimeout(() => {
         if (volume > 0) {
@@ -4485,17 +4476,17 @@ const SoundSettings = (() => {
     // バイブレーション機能の初期化
     const vibrationToggle = document.getElementById("vibrationToggle");
     const vibrationLabel = document.querySelector(".vibration-switch-label");
-    
+
     if (vibrationToggle && vibrationLabel) {
       // バイブレーション対応デバイスの場合のみ表示（CSSで制御）
       if (AlarmSound.isVibrationSupported()) {
         console.log("📳 バイブレーション機能が利用可能です");
       }
-      
+
       vibrationToggle.addEventListener("change", (e) => {
         const enabled = e.target.checked;
         vibrationLabel.textContent = enabled ? "ON" : "OFF";
-        
+
         // テストバイブレーション
         if (enabled && navigator.vibrate) {
           navigator.vibrate(200);
