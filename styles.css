@@ -719,7 +719,18 @@ body {
   color: var(--fg);
 }
 
-/* バイブレーション設定 - スイッチデザイン */
+/* バイブレーション設定 - スイッチデザイン（スマホのみ表示） */
+#vibrationSection {
+  display: none !important;
+}
+
+/* スマホ（タッチデバイス）でのみ表示 */
+@media (max-width: 768px) {
+  #vibrationSection {
+    display: block !important;
+  }
+}
+
 .vibration-switch-wrapper {
   display: flex;
   align-items: center;
