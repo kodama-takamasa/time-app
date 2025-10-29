@@ -32,4 +32,3 @@
 
 ---
 
-Made with ❤️ for productivity
