@@ -396,7 +396,6 @@ const AlarmSound = (() => {
     }
   };
 
-
   // テスト用の音声再生関数（実際のアラーム音と同じ）
   const testSound = () => {
     console.log(`🔊 テスト音声を再生 (種類: ${currentSoundType})`);
@@ -440,6 +439,16 @@ const AlarmSound = (() => {
   const setVolume = (newVolume) => {
     volume = Math.max(0, Math.min(1, newVolume)); // 0-1の範囲に制限
     console.log(`🔊 音量を${Math.round(volume * 100)}%に設定`);
+    
+    // テスト音声が再生中の場合、リアルタイムで音量を更新
+    if (testAudio) {
+      testAudio.volume = volume;
+    }
+    
+    // アラーム音が再生中の場合も音量を更新
+    if (alarmAudio) {
+      alarmAudio.volume = volume;
+    }
   };
 
   // 音量取得関数
@@ -2153,36 +2162,45 @@ const MinimalMode = (() => {
       }
 
       // 画面の向きを横向きにロック（サポートされている場合）
+      console.log("🔄 画面の向き制御を試みます...");
+      console.log("📱 現在の画面サイズ:", window.innerWidth, "x", window.innerHeight);
+      console.log("📱 screen.orientation:", screen.orientation);
+      console.log("📱 フルスクリーン状態:", !!document.fullscreenElement);
+      
       try {
         if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape").catch((err) => {
-            console.log("画面の向きロックはサポートされていません", err);
-            // ロックできない場合、ユーザーに画面を回転するよう促す
-            if (window.innerWidth < window.innerHeight) {
-              // 縦向きの場合のみメッセージ表示
-              setTimeout(() => {
-                if (isMinimalMode) {
-                  alert(
-                    "📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります"
-                  );
-                }
-              }, 500);
-            }
-          });
+          console.log("🔒 orientation.lock('landscape')を実行します...");
+          
+          await screen.orientation.lock("landscape")
+            .then(() => {
+              console.log("✅ 画面を横向きにロックしました");
+            })
+            .catch((err) => {
+              console.warn("⚠️ 画面の向きロックに失敗:", err.name, err.message);
+              
+              // ロックできない場合、ユーザーに画面を回転するよう促す
+              if (window.innerWidth < window.innerHeight) {
+                setTimeout(() => {
+                  if (isMinimalMode) {
+                    alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります\n\n※一部のブラウザでは画面の自動回転に対応していません");
+                  }
+                }, 500);
+              }
+            });
         } else {
+          console.log("⚠️ screen.orientation.lock()はサポートされていません");
+          
           // screen.orientationがサポートされていない場合もメッセージ表示
           if (window.innerWidth < window.innerHeight) {
             setTimeout(() => {
               if (isMinimalMode) {
-                alert(
-                  "📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります"
-                );
+                alert("📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります");
               }
             }, 500);
           }
         }
       } catch (err) {
-        console.log("画面の向きロックはサポートされていません", err);
+        console.error("❌ 画面の向きロックエラー:", err);
       }
     } else {
       // 通常モードに戻る
@@ -4393,22 +4411,24 @@ const SoundSettings = (() => {
   volumeSlider.addEventListener("input", () => {
     const volume = parseFloat(volumeSlider.value);
     const wasZero = previousVolume === 0;
-    
+
     AlarmSound.setVolume(volume);
     if (volume === 0) {
       volumeDisplay.textContent = "無音";
     } else {
       volumeDisplay.textContent = `${Math.round(volume * 100)}%`;
-      
+
       // 音量を0から上げた時、1回だけアラート表示
       if (wasZero && !silentModeAlertShown) {
         silentModeAlertShown = true;
         setTimeout(() => {
-          alert("🔇 消音モードの確認\n\nスマホが消音モードになっている場合、音声は再生されません。\n\n消音モードを解除してください。\n（バイブレーション機能は動作します）");
+          alert(
+            "🔇 消音モードの確認\n\nスマホが消音モードになっている場合、音声は再生されません。\n\n消音モードを解除してください。\n（バイブレーション機能は動作します）"
+          );
         }, 100);
       }
     }
-    
+
     previousVolume = volume;
 
     // リアルタイム音声テスト（スライダー操作中）
@@ -4505,9 +4525,19 @@ const SoundSettings = (() => {
 // スマホの自動再生ポリシー対策：最初のユーザー操作で音声を有効化
 const initAudioOnFirstInteraction = () => {
   const initAudio = () => {
-    // SOUND_TYPESモジュール内のinitAudioContextを呼び出し
-    SOUND_TYPES.initAudioContext();
-    console.log("🎵 ユーザー操作により音声を有効化");
+    // 音声コンテキストを初期化（ダミー音声を再生）
+    try {
+      const dummyAudio = new Audio();
+      dummyAudio.volume = 0;
+      dummyAudio.play().then(() => {
+        dummyAudio.pause();
+        console.log("🎵 ユーザー操作により音声を有効化");
+      }).catch(() => {
+        // エラーは無視
+      });
+    } catch (err) {
+      // エラーは無視
+    }
   };
 
   document.addEventListener("click", initAudio, { once: true });
