@@ -133,13 +133,21 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-
-        // alarm_clock.mp3を再生
+        
+        // alarm_clock.mp3を再生（1秒で停止）
         alarmAudio = new Audio("sound/alarm_clock.mp3");
         alarmAudio.volume = volume;
         alarmAudio.play().catch((error) => {
           console.error("アラーム音の再生エラー:", error);
         });
+        
+        // 1秒後に停止
+        setTimeout(() => {
+          if (alarmAudio) {
+            alarmAudio.pause();
+            alarmAudio.currentTime = 0;
+          }
+        }, 1000);
       },
     },
     notification: {
@@ -195,13 +203,21 @@ const AlarmSound = (() => {
           console.log("🔇 音量0のため再生をスキップ");
           return;
         }
-
-        // alarm_gong.mp3を再生
+        
+        // alarm_gong.mp3を再生（1秒で停止）
         alarmAudio = new Audio("sound/alarm_gong.mp3");
         alarmAudio.volume = volume;
         alarmAudio.play().catch((error) => {
           console.error("ゴング音の再生エラー:", error);
         });
+        
+        // 1秒後に停止
+        setTimeout(() => {
+          if (alarmAudio) {
+            alarmAudio.pause();
+            alarmAudio.currentTime = 0;
+          }
+        }, 1000);
       },
     },
   };
@@ -362,24 +378,35 @@ const AlarmSound = (() => {
 
     console.log(`🔊 アラーム音を再生開始 (種類: ${currentSoundType})`);
     console.log(`📳 バイブレーション設定: ${vibrationEnabled ? "ON" : "OFF"}`);
-    console.log(`📳 バイブレーション対応: ${navigator.vibrate ? "YES" : "NO"}`);
+    console.log(`📳 navigator.vibrate: ${typeof navigator.vibrate}`);
+    console.log(`📳 ユーザーエージェント: ${navigator.userAgent}`);
 
     // バイブレーション機能（スマホのみ）
-    if (vibrationEnabled && navigator.vibrate) {
-      try {
-        // より強いパターン: 振動400ms, 休止200ms, 振動400ms, 休止200ms, 振動600ms
-        const vibrated = navigator.vibrate([400, 200, 400, 200, 600]);
-        console.log(`📳 バイブレーション実行: ${vibrated ? "成功" : "失敗"}`);
-      } catch (err) {
-        console.error("📳 バイブレーションエラー:", err);
+    if (vibrationEnabled) {
+      if ("vibrate" in navigator) {
+        try {
+          // より強力なバイブレーションパターン
+          const pattern = [500, 100, 500, 100, 500];
+          console.log(`📳 バイブレーション実行前...`);
+          const vibrated = navigator.vibrate(pattern);
+          console.log(`📳 バイブレーション実行結果: ${vibrated ? "✅ 成功" : "❌ 失敗"}`);
+          console.log(`📳 パターン: [${pattern.join(", ")}]`);
+          
+          // さらに長いバイブレーション（2秒間）
+          setTimeout(() => {
+            if (vibrationEnabled) {
+              navigator.vibrate(1000);
+              console.log(`📳 追加バイブレーション: 1000ms`);
+            }
+          }, 1500);
+        } catch (err) {
+          console.error("❌ バイブレーションエラー:", err);
+        }
+      } else {
+        console.log("⚠️ このデバイスはバイブレーションAPIに対応していません");
       }
     } else {
-      if (!vibrationEnabled) {
-        console.log("📳 バイブレーションはOFFに設定されています");
-      }
-      if (!navigator.vibrate) {
-        console.log("📳 このデバイスはバイブレーションに対応していません");
-      }
+      console.log("📳 バイブレーション機能はOFFに設定されています");
     }
 
     // 現在選択されている音声種類で再生
@@ -2188,28 +2215,37 @@ const MinimalMode = (() => {
               console.log("✅ 画面を横向きにロックしました");
             })
             .catch((err) => {
-              console.warn("⚠️ 画面の向きロックに失敗:", err.name, err.message);
+              console.log("ℹ️ 画面の向きロック:", err.name);
+              
+              // NotSupportedErrorは正常（iOS等では未対応）なのでエラーログ出力しない
+              if (err.name !== "NotSupportedError") {
+                console.warn("⚠️ 画面の向きロック失敗:", err.message);
+              }
 
-              // ロックできない場合、ユーザーに画面を回転するよう促す
+              // 縦画面の場合のみ、横向きを促すメッセージ
               if (window.innerWidth < window.innerHeight) {
                 setTimeout(() => {
                   if (isMinimalMode) {
                     alert(
-                      "📱 画面を横向きにしてください\n\nより大きな表示で見やすくなります\n\n※一部のブラウザでは画面の自動回転に対応していません"
+                      "📱 画面を横向きにすると、より見やすくなります"
                     );
                   }
                 }, 500);
               }
             });
         } else {
-          console.log("⚠️ screen.orientation.lock()はサポートされていません（iOS）");
+          console.log(
+            "⚠️ screen.orientation.lock()はサポートされていません（iOS）"
+          );
           console.log("💡 iOSでは画面の自動回転に対応していません");
-          
+
           // iOSの場合、手動で横向きにするよう促す（1回のみ）
           if (window.innerWidth < window.innerHeight) {
             setTimeout(() => {
               if (isMinimalMode) {
-                alert("📱 画面を横向きにすると、より見やすくなります\n\n※手動で画面を回転させてください");
+                alert(
+                  "📱 画面を横向きにすると、より見やすくなります\n\n※手動で画面を回転させてください"
+                );
               }
             }, 300);
           }
@@ -2227,7 +2263,10 @@ const MinimalMode = (() => {
         if (document.fullscreenElement && document.exitFullscreen) {
           await document.exitFullscreen();
           console.log("✅ フルスクリーンモードを解除しました");
-        } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        } else if (
+          document.webkitFullscreenElement &&
+          document.webkitExitFullscreen
+        ) {
           // iOS Safari対応
           await document.webkitExitFullscreen();
           console.log("✅ フルスクリーンモードを解除しました（webkit）");
@@ -4483,8 +4522,28 @@ const SoundSettings = (() => {
   const init = () => {
     createSoundTypeList();
 
-    // 初期音量を設定
-    const initialVolume = parseFloat(volumeSlider.value);
+    // スマホの場合、消音モードを判定して音量をデフォルト設定
+    let initialVolume = parseFloat(volumeSlider.value);
+    
+    if (window.innerWidth <= 768) {
+      // スマホの場合、消音モード判定を試みる
+      const testAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+      testAudio.volume = 0.1;
+      
+      testAudio.play().then(() => {
+        testAudio.pause();
+        console.log("✅ 音声再生可能（消音モードOFF）");
+      }).catch((error) => {
+        console.log("🔇 消音モード検出：音量を無音に設定");
+        // 消音モードの場合、音量を0に設定
+        initialVolume = 0;
+        volumeSlider.value = 0;
+        AlarmSound.setVolume(0);
+        volumeDisplay.textContent = "無音";
+      });
+    }
+    
+    // 音量設定
     AlarmSound.setVolume(initialVolume);
     if (initialVolume === 0) {
       volumeDisplay.textContent = "無音";
@@ -4505,10 +4564,20 @@ const SoundSettings = (() => {
       vibrationToggle.addEventListener("change", (e) => {
         const enabled = e.target.checked;
         vibrationLabel.textContent = enabled ? "ON" : "OFF";
+        
+        // バイブレーション設定を保存
+        AlarmSound.setVibration(enabled);
+        console.log(`📳 バイブレーション設定変更: ${enabled ? "ON" : "OFF"}`);
 
-        // テストバイブレーション
-        if (enabled && navigator.vibrate) {
-          navigator.vibrate(200);
+        // テストバイブレーション（強力なパターン）
+        if (enabled && "vibrate" in navigator) {
+          try {
+            const testPattern = [200, 100, 200];
+            const result = navigator.vibrate(testPattern);
+            console.log(`📳 テストバイブレーション: ${result ? "✅ 成功" : "❌ 失敗"}`);
+          } catch (err) {
+            console.error("❌ テストバイブレーションエラー:", err);
+          }
         }
       });
     }
