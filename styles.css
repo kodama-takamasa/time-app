@@ -1087,13 +1087,6 @@ body.minimal-mode .center-display {
   align-items: center !important;
 }
 
-/* スマホ横向き時：より大きく表示 */
-@media (max-width: 926px) and (orientation: landscape) {
-  body.minimal-mode #display {
-    transform: scale(1.5) !important;
-  }
-}
-
 /* ミニマルモード時のアイコン回転は不要（アイコン自体を変更するため） */
 
 /* スマホ画面最下部にボーダーライン（クリックしやすく） */
