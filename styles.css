@@ -1239,14 +1239,30 @@ body.minimal-mode .center-display {
 
   .side-menu .custom-time {
     width: 100%;
-    max-width: 90vw;
+    max-width: calc(100vw - 32px);
     margin-top: 20px;
   }
 
-  /* アラーム時刻設定の幅をタイマープリセットと同じに */
+  /* アラーム用コンテンツ全体の幅を統一 */
+  .side-menu #alarm-menu-content {
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+  }
+
+  /* アラーム時刻設定の幅を親要素に合わせる */
   .side-menu #alarmTime {
     width: 100%;
-    max-width: 90vw;
+  }
+
+  /* アラーム繰り返し設定の幅を親要素に合わせる */
+  .side-menu .alarm-repeat-setting {
+    width: 100%;
+  }
+
+  /* アラームリストセクションの幅を親要素に合わせる */
+  .side-menu .alarm-list-section {
+    width: 100%;
   }
 
   .side-menu .ct-row {
@@ -1354,13 +1370,29 @@ body.minimal-mode .center-display {
   }
 
   .side-menu .custom-time {
-    max-width: 90vw;
+    max-width: calc(100vw - 24px);
     width: 100%;
   }
 
-  /* アラーム時刻設定の幅をタイマープリセットと同じに */
+  /* アラーム用コンテンツ全体の幅を統一 */
+  .side-menu #alarm-menu-content {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+
+  /* アラーム時刻設定の幅を親要素に合わせる */
   .side-menu #alarmTime {
-    max-width: 90vw;
+    width: 100%;
+  }
+
+  /* アラーム繰り返し設定の幅を親要素に合わせる */
+  .side-menu .alarm-repeat-setting {
+    width: 100%;
+  }
+
+  /* アラームリストセクションの幅を親要素に合わせる */
+  .side-menu .alarm-list-section {
     width: 100%;
   }
 
@@ -2702,13 +2734,13 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .side-menu {
-  width: 180px;
-  right: -200px;
+  width: 200px;
+  right: -220px;
   padding-right: 2px;
 }
 
 .side-menu.open + .menu-toggle {
-  right: 180px;
+  right: 200px;
 }
 
 /* モーダルのパディングを調整 */
