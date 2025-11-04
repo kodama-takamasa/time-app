@@ -1101,6 +1101,11 @@ body {
   transform: scale(1.02);
 }
 
+/* スリープ切り替えボタン（ミニマルモードボタンの右側に配置） */
+.sleep-toggle {
+  left: 64px !important; /* ミニマルモードボタンの右側（40px + 16px間隔 + 8px） */
+}
+
 /* ストップウォッチモードではメニューボタンを非表示 */
 body.stopwatch-mode .menu-toggle {
   display: none !important;
@@ -1285,6 +1290,11 @@ body.minimal-mode .center-display {
     left: 12px !important;
     padding: 6px !important;
     border-radius: 6px !important;
+  }
+
+  /* スリープ切り替えボタンのレスポンシブ対応 */
+  .sleep-toggle {
+    left: 56px !important; /* ミニマルモードボタンの右側（36px + 12px間隔 + 8px） */
   }
 
   /* モバイルメニュー内のコンテンツスタイル */
@@ -1503,6 +1513,11 @@ body.minimal-mode .center-display {
     left: 10px !important;
     padding: 5px !important;
     border-radius: 5px !important;
+  }
+
+  /* スリープ切り替えボタンの極小画面対応 */
+  .sleep-toggle {
+    left: 50px !important; /* ミニマルモードボタンの右側（32px + 10px間隔 + 8px） */
   }
 
   /* コントロールボタンの極小画面対応 */

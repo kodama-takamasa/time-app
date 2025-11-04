@@ -1559,9 +1559,6 @@ const TimerControl = (() => {
     });
     updateToggleButton(true);
     updateCircuitProgress();
-
-    // Wake Lockを有効化（スリープモード防止）
-    await WakeLockManager.request();
   };
 
   const pause = async () => {
@@ -1582,9 +1579,6 @@ const TimerControl = (() => {
 
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
-
-    // Wake Lockを解放（スリープモード許可）
-    await WakeLockManager.release();
   };
 
   const stop = async () => {
@@ -1594,9 +1588,6 @@ const TimerControl = (() => {
     }
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
-
-    // Wake Lockを解放（スリープモード許可）
-    await WakeLockManager.release();
   };
 
   const reset = async () => {
@@ -2718,6 +2709,85 @@ const MinimalMode = (() => {
   toggleButton.addEventListener("click", toggle);
 
   return { toggle, isActive };
+})();
+
+// ===== 手動スリープ防止切り替え（スマホのみ）=====
+const SleepToggle = (() => {
+  const toggleButton = document.getElementById("sleepToggle");
+  const sleepIcon = document.getElementById("sleepIcon");
+  let isSleepPrevented = false;
+
+  // スマホかどうかを判定
+  const isMobile = () => {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+           (window.innerWidth <= 768);
+  };
+
+  // スリープ防止の状態を更新
+  const updateUI = () => {
+    if (sleepIcon) {
+      if (isSleepPrevented) {
+        sleepIcon.className = "fas fa-sun"; // 太陽アイコン（スリープ防止ON）
+        toggleButton.setAttribute("aria-label", "スリープ防止をOFF");
+      } else {
+        sleepIcon.className = "fas fa-moon"; // 月アイコン（スリープ防止OFF）
+        toggleButton.setAttribute("aria-label", "スリープ防止をON");
+      }
+    }
+  };
+
+  // スリープ防止の切り替え
+  const toggle = async () => {
+    isSleepPrevented = !isSleepPrevented;
+
+    if (isSleepPrevented) {
+      // スリープ防止をON
+      const success = await WakeLockManager.request();
+      if (success) {
+        console.log("✅ スリープ防止: ON");
+      } else {
+        console.warn("⚠️ スリープ防止の有効化に失敗しました");
+        isSleepPrevented = false; // 失敗した場合は状態を戻す
+      }
+    } else {
+      // スリープ防止をOFF
+      await WakeLockManager.release();
+      console.log("✅ スリープ防止: OFF");
+    }
+
+    updateUI();
+  };
+
+  // 初期化
+  const init = () => {
+    if (!toggleButton || !sleepIcon) {
+      console.warn("スリープ切り替えボタンが見つかりません");
+      return;
+    }
+
+    // スマホのみ表示
+    if (isMobile()) {
+      toggleButton.style.display = "block";
+      updateUI();
+      toggleButton.addEventListener("click", toggle);
+      console.log("📱 スリープ切り替えボタンを有効化しました");
+    } else {
+      toggleButton.style.display = "none";
+      console.log("💻 デスクトップ環境: スリープ切り替えボタンを非表示");
+    }
+  };
+
+  // ページ読み込み時に初期化
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+  return {
+    toggle,
+    isActive: () => isSleepPrevented,
+  };
 })();
 
 // ===== サイドメニュー =====
