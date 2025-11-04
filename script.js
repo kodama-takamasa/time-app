@@ -323,58 +323,127 @@ const WeatherManager = (() => {
   };
 })();
 
-// ===== Wake Lock管理モジュール =====
+// ===== Wake Lock管理モジュール（iOS対応版）=====
 const WakeLockManager = (() => {
   let wakeLock = null;
   let isEnabled = false;
+  let noSleepVideo = null;
+  let noSleepInterval = null;
 
   // Wake Lock APIのサポート確認
-  const isSupported = () => {
+  const isWakeLockSupported = () => {
     return "wakeLock" in navigator;
   };
 
-  // Wake Lockの取得
+  // iOS用のNoSleep実装（video要素を使用）
+  const createNoSleepVideo = () => {
+    if (noSleepVideo) return noSleepVideo;
+
+    const video = document.createElement("video");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("muted", "");
+    video.style.position = "fixed";
+    video.style.opacity = "0";
+    video.style.pointerEvents = "none";
+    video.style.width = "1px";
+    video.style.height = "1px";
+    video.style.left = "-9999px";
+    
+    // 超短い無音のwebmビデオ（base64エンコード）
+    video.src = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwH/////////FUmpZpkq17GDD0JATYCGQ2hyb21lV0GGQ2hyb21lFlSua7+uwdkBQwRTwa+uwdkAAAAAAAHTEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIH+7AEAAAAAAACkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmoCrXsYMPQkBNgIZDYW1lY29kZXJEiGJvcmJvcwCAAICAAIDgAYCBAICAoKGqDwAAAAAAAAAAAEqJY2VudGV1ckNhbnZhc0NhcHR1cmUAAAAAAAAAAAAAAQAAAAAAAAA=";
+    
+    video.loop = true;
+    document.body.appendChild(video);
+    noSleepVideo = video;
+    
+    return video;
+  };
+
+  // Wake Lockの取得（iOS対応）
   const request = async () => {
-    if (!isSupported()) {
-      console.log("Wake Lock API is not supported");
-      return false;
+    console.log("🔒 スリープ防止を有効化中...");
+    
+    // Wake Lock API（Android、最新iOSで動作）
+    if (isWakeLockSupported()) {
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        isEnabled = true;
+        console.log("✅ Wake Lock API: 有効化成功");
+
+        // Wake Lockが解放された時のリスナー
+        wakeLock.addEventListener("release", () => {
+          console.log("⚠️ Wake Lock: 解放されました");
+        });
+
+        return true;
+      } catch (err) {
+        console.warn(`⚠️ Wake Lock API失敗: ${err.name}, ${err.message}`);
+        console.log("📱 iOS用の代替手段を使用します");
+      }
     }
 
+    // iOS用の代替手段（video要素）
     try {
-      wakeLock = await navigator.wakeLock.request("screen");
+      const video = createNoSleepVideo();
+      await video.play();
       isEnabled = true;
-      console.log("Wake Lock activated");
-
-      // Wake Lockが解放された時のリスナー
-      wakeLock.addEventListener("release", () => {
-        console.log("Wake Lock released");
-      });
-
+      console.log("✅ iOS NoSleep: 有効化成功（video再生）");
+      
+      // 定期的にビデオの再生状態を確認（保険）
+      noSleepInterval = setInterval(() => {
+        if (video.paused) {
+          video.play().catch((err) => {
+            console.warn("⚠️ ビデオ再生の再開に失敗:", err);
+          });
+        }
+      }, 10000); // 10秒ごとにチェック
+      
       return true;
     } catch (err) {
-      console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+      console.error("❌ NoSleep実装エラー:", err);
       isEnabled = false;
       return false;
     }
   };
 
-  // Wake Lockの解放
+  // Wake Lockの解放（iOS対応）
   const release = async () => {
+    console.log("🔓 スリープ防止を解除中...");
+    
+    // Wake Lock APIの解放
     if (wakeLock !== null) {
       try {
         await wakeLock.release();
         wakeLock = null;
-        isEnabled = false;
-        console.log("Wake Lock manually released");
+        console.log("✅ Wake Lock API: 解放成功");
       } catch (err) {
-        console.error(`Wake Lock release error: ${err}`);
+        console.error("❌ Wake Lock解放エラー:", err);
       }
     }
+
+    // iOS用のNoSleep解除
+    if (noSleepVideo) {
+      try {
+        noSleepVideo.pause();
+        console.log("✅ iOS NoSleep: 解除成功（video停止）");
+      } catch (err) {
+        console.error("❌ NoSleep解除エラー:", err);
+      }
+    }
+
+    // インターバルをクリア
+    if (noSleepInterval) {
+      clearInterval(noSleepInterval);
+      noSleepInterval = null;
+    }
+
+    isEnabled = false;
   };
 
   // ページの可視性変更時の処理
   const handleVisibilityChange = async () => {
     if (document.visibilityState === "visible" && isEnabled) {
+      console.log("📱 フォアグラウンドに復帰: スリープ防止を再有効化");
       // フォアグラウンドに戻った時、必要なら再取得
       await request();
     }
@@ -386,7 +455,7 @@ const WakeLockManager = (() => {
   }
 
   return {
-    isSupported,
+    isSupported: isWakeLockSupported,
     request,
     release,
     isEnabled: () => isEnabled,
@@ -4907,3 +4976,4 @@ if (document.readyState === "loading") {
 } else {
   initAudioOnFirstInteraction();
 }
+
