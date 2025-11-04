@@ -341,28 +341,35 @@ const WakeLockManager = (() => {
 
     const video = document.createElement("video");
     video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
     video.setAttribute("muted", "");
+    video.setAttribute("autoplay", "");
     video.style.position = "fixed";
     video.style.opacity = "0";
     video.style.pointerEvents = "none";
     video.style.width = "1px";
     video.style.height = "1px";
     video.style.left = "-9999px";
-    
-    // 超短い無音のwebmビデオ（base64エンコード）
-    video.src = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwH/////////FUmpZpkq17GDD0JATYCGQ2hyb21lV0GGQ2hyb21lFlSua7+uwdkBQwRTwa+uwdkAAAAAAAHTEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIH+7AEAAAAAAACkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmoCrXsYMPQkBNgIZDYW1lY29kZXJEiGJvcmJvcwCAAICAAIDgAYCBAICAoKGqDwAAAAAAAAAAAEqJY2VudGV1ckNhbnZhc0NhcHR1cmUAAAAAAAAAAAAAAQAAAAAAAAA=";
-    
+    video.style.top = "-9999px";
+
+    // MP4形式のほうがiOSでは確実（超短い無音ビデオ）
+    video.src =
+      "data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAu1tZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE1MiByMjg1NCBlOWE1OTAzIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNyAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAB8WIIBAAr//72nvh4+B6AKIAwEAAAHvAAFgDXf0/AAACAwYABhn+c/AQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
+
     video.loop = true;
+    video.volume = 0;
+    video.muted = true;
+
     document.body.appendChild(video);
     noSleepVideo = video;
-    
+
     return video;
   };
 
   // Wake Lockの取得（iOS対応）
   const request = async () => {
     console.log("🔒 スリープ防止を有効化中...");
-    
+
     // Wake Lock API（Android、最新iOSで動作）
     if (isWakeLockSupported()) {
       try {
@@ -385,19 +392,29 @@ const WakeLockManager = (() => {
     // iOS用の代替手段（video要素）
     try {
       const video = createNoSleepVideo();
-      await video.play();
+
+      // iOSでは確実に再生を開始
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
+
       isEnabled = true;
       console.log("✅ iOS NoSleep: 有効化成功（video再生）");
-      
-      // 定期的にビデオの再生状態を確認（保険）
+      console.log(
+        `📹 Video状態: paused=${video.paused}, ended=${video.ended}, readyState=${video.readyState}`
+      );
+
+      // より頻繁にビデオの再生状態を確認（iOSは不安定なため）
       noSleepInterval = setInterval(() => {
-        if (video.paused) {
+        if (video.paused || video.ended) {
+          console.log("⚠️ ビデオが停止していました。再開します...");
           video.play().catch((err) => {
             console.warn("⚠️ ビデオ再生の再開に失敗:", err);
           });
         }
-      }, 10000); // 10秒ごとにチェック
-      
+      }, 5000); // 5秒ごとにチェック（より頻繁に）
+
       return true;
     } catch (err) {
       console.error("❌ NoSleep実装エラー:", err);
@@ -409,7 +426,7 @@ const WakeLockManager = (() => {
   // Wake Lockの解放（iOS対応）
   const release = async () => {
     console.log("🔓 スリープ防止を解除中...");
-    
+
     // Wake Lock APIの解放
     if (wakeLock !== null) {
       try {
@@ -4976,4 +4993,3 @@ if (document.readyState === "loading") {
 } else {
   initAudioOnFirstInteraction();
 }
-
