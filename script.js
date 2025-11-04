@@ -1,3 +1,398 @@
+// ===== 天気情報管理モジュール =====
+const WeatherManager = (() => {
+  let weatherData = null;
+  let lastUpdateTime = 0;
+  const UPDATE_INTERVAL = 30 * 60 * 1000; // 30分ごとに更新
+
+  // 天気アイコンのマッピング（Font Awesomeアイコン）
+  const weatherIcons = {
+    晴: '<i class="fas fa-sun"></i>',
+    晴れ: '<i class="fas fa-sun"></i>',
+    曇: '<i class="fas fa-cloud"></i>',
+    曇り: '<i class="fas fa-cloud"></i>',
+    雨: '<i class="fas fa-cloud-rain"></i>',
+    大雨: '<i class="fas fa-cloud-showers-heavy"></i>',
+    雷: '<i class="fas fa-bolt"></i>',
+    雷雨: '<i class="fas fa-cloud-bolt"></i>',
+    雪: '<i class="fas fa-snowflake"></i>',
+    大雪: '<i class="fas fa-snowflake"></i>',
+    霧: '<i class="fas fa-smog"></i>',
+    暴風: '<i class="fas fa-wind"></i>',
+    暴風雪: '<i class="fas fa-snowflake"></i>',
+  };
+
+  // 47都道府県と主要市町村のコードと座標
+  const cityCodes = {
+    // 北海道
+    札幌市: { code: "016010", lat: 43.0642, lon: 141.3469, pref: "北海道" },
+    函館市: { code: "017010", lat: 41.7687, lon: 140.7288, pref: "北海道" },
+    旭川市: { code: "012010", lat: 43.7706, lon: 142.365, pref: "北海道" },
+    釧路市: { code: "013010", lat: 42.9849, lon: 144.382, pref: "北海道" },
+
+    // 東北
+    青森市: { code: "020010", lat: 40.8244, lon: 140.74, pref: "青森県" },
+    盛岡市: { code: "030010", lat: 39.7036, lon: 141.1527, pref: "岩手県" },
+    仙台市: { code: "040010", lat: 38.2682, lon: 140.8694, pref: "宮城県" },
+    秋田市: { code: "050010", lat: 39.7186, lon: 140.1024, pref: "秋田県" },
+    山形市: { code: "060010", lat: 38.2404, lon: 140.3633, pref: "山形県" },
+    福島市: { code: "070010", lat: 37.75, lon: 140.4674, pref: "福島県" },
+    郡山市: { code: "070010", lat: 37.4, lon: 140.3833, pref: "福島県" },
+
+    // 関東
+    水戸市: { code: "080010", lat: 36.3414, lon: 140.4467, pref: "茨城県" },
+    宇都宮市: { code: "090010", lat: 36.5658, lon: 139.8836, pref: "栃木県" },
+    前橋市: { code: "100010", lat: 36.3911, lon: 139.0608, pref: "群馬県" },
+    さいたま市: { code: "110010", lat: 35.8617, lon: 139.6455, pref: "埼玉県" },
+    千葉市: { code: "120010", lat: 35.6074, lon: 140.1065, pref: "千葉県" },
+    東京都: { code: "130010", lat: 35.6762, lon: 139.6503, pref: "東京都" },
+    横浜市: { code: "140010", lat: 35.4437, lon: 139.638, pref: "神奈川県" },
+
+    // 中部
+    新潟市: { code: "150010", lat: 37.9161, lon: 139.0364, pref: "新潟県" },
+    富山市: { code: "160010", lat: 36.6953, lon: 137.2113, pref: "富山県" },
+    金沢市: { code: "170010", lat: 36.5946, lon: 136.6256, pref: "石川県" },
+    福井市: { code: "180010", lat: 36.0652, lon: 136.2216, pref: "福井県" },
+    甲府市: { code: "190010", lat: 35.6636, lon: 138.5683, pref: "山梨県" },
+    長野市: { code: "200010", lat: 36.6513, lon: 138.181, pref: "長野県" },
+    岐阜市: { code: "210010", lat: 35.4231, lon: 136.7606, pref: "岐阜県" },
+    静岡市: { code: "220010", lat: 34.9769, lon: 138.3831, pref: "静岡県" },
+    浜松市: { code: "220020", lat: 34.7108, lon: 137.7261, pref: "静岡県" },
+    名古屋市: { code: "230010", lat: 35.1815, lon: 136.9066, pref: "愛知県" },
+
+    // 近畿
+    津市: { code: "240010", lat: 34.7303, lon: 136.5086, pref: "三重県" },
+    大津市: { code: "250010", lat: 35.0045, lon: 135.8686, pref: "滋賀県" },
+    京都市: { code: "260010", lat: 35.0116, lon: 135.7681, pref: "京都府" },
+    大阪市: { code: "270000", lat: 34.6937, lon: 135.5023, pref: "大阪府" },
+    神戸市: { code: "280010", lat: 34.6901, lon: 135.1955, pref: "兵庫県" },
+    奈良市: { code: "290010", lat: 34.6851, lon: 135.8048, pref: "奈良県" },
+    和歌山市: { code: "300010", lat: 34.2261, lon: 135.1675, pref: "和歌山県" },
+
+    // 中国
+    鳥取市: { code: "310010", lat: 35.5014, lon: 134.235, pref: "鳥取県" },
+    松江市: { code: "320010", lat: 35.4722, lon: 133.0506, pref: "島根県" },
+    岡山市: { code: "330010", lat: 34.6617, lon: 133.935, pref: "岡山県" },
+    広島市: { code: "340010", lat: 34.3853, lon: 132.4553, pref: "広島県" },
+    山口市: { code: "350010", lat: 34.1858, lon: 131.4706, pref: "山口県" },
+
+    // 四国
+    徳島市: { code: "360010", lat: 34.0658, lon: 134.5594, pref: "徳島県" },
+    高松市: { code: "370000", lat: 34.3428, lon: 134.0433, pref: "香川県" },
+    松山市: { code: "380010", lat: 33.8416, lon: 132.7657, pref: "愛媛県" },
+    高知市: { code: "390010", lat: 33.5597, lon: 133.5311, pref: "高知県" },
+
+    // 九州・沖縄
+    福岡市: { code: "400010", lat: 33.5904, lon: 130.4017, pref: "福岡県" },
+    北九州市: { code: "400020", lat: 33.8834, lon: 130.8751, pref: "福岡県" },
+    佐賀市: { code: "410010", lat: 33.2494, lon: 130.2989, pref: "佐賀県" },
+    長崎市: { code: "420010", lat: 32.7503, lon: 129.8777, pref: "長崎県" },
+    熊本市: { code: "430010", lat: 32.7898, lon: 130.7417, pref: "熊本県" },
+    大分市: { code: "440010", lat: 33.2382, lon: 131.6126, pref: "大分県" },
+    宮崎市: { code: "450010", lat: 31.9077, lon: 131.4202, pref: "宮崎県" },
+    鹿児島市: { code: "460010", lat: 31.5966, lon: 130.5571, pref: "鹿児島県" },
+    那覇市: { code: "471010", lat: 26.2124, lon: 127.6809, pref: "沖縄県" },
+  };
+
+  // LocalStorageから地域を取得
+  const getSelectedCity = () => {
+    return localStorage.getItem("weatherCity") || "東京都";
+  };
+
+  // LocalStorageに地域を保存
+  const setSelectedCity = (city) => {
+    localStorage.setItem("weatherCity", city);
+    // 地域変更時はキャッシュをクリア
+    weatherData = null;
+    lastUpdateTime = 0;
+  };
+
+  // 天気テキストからアイコンを取得
+  const getWeatherIcon = (weatherText) => {
+    if (!weatherText) return '<i class="fas fa-thermometer-half"></i>';
+
+    // 天気テキストに含まれるキーワードでマッチング
+    for (const [key, icon] of Object.entries(weatherIcons)) {
+      if (weatherText.includes(key)) {
+        return icon;
+      }
+    }
+
+    return '<i class="fas fa-thermometer-half"></i>';
+  };
+
+  // 2地点間の距離を計算（Haversine formula）
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // 地球の半径（km）
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // 現在地に最も近い都市を取得
+  const getNearestCity = async () => {
+    try {
+      // 位置情報を取得
+      const position = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("位置情報がサポートされていません"));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 10000,
+          maximumAge: 600000,
+        });
+      });
+
+      const userLat = position.coords.latitude;
+      const userLon = position.coords.longitude;
+
+      // 最も近い都市を検索
+      let nearestCity = "東京都";
+      let minDistance = Infinity;
+
+      console.log(
+        `📍 現在地: 緯度 ${userLat.toFixed(4)}, 経度 ${userLon.toFixed(4)}`
+      );
+      console.log("🔍 各都市までの距離を計算中...");
+
+      const distances = [];
+      for (const [cityName, cityData] of Object.entries(cityCodes)) {
+        const distance = calculateDistance(
+          userLat,
+          userLon,
+          cityData.lat,
+          cityData.lon
+        );
+        distances.push({ city: cityName, distance: distance.toFixed(1) });
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCity = cityName;
+        }
+      }
+
+      // 距離が近い順に上位5都市を表示
+      distances.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+      console.log("📊 最も近い5都市:");
+      distances.slice(0, 5).forEach((d, i) => {
+        console.log(`  ${i + 1}. ${d.city}: ${d.distance}km`);
+      });
+
+      console.log(
+        `✅ 選択された都市: ${nearestCity} (距離: ${minDistance.toFixed(1)}km)`
+      );
+      return nearestCity;
+    } catch (error) {
+      console.warn("位置情報の取得に失敗しました:", error.message);
+      // デフォルトで東京都を返す
+      return "東京都";
+    }
+  };
+
+  // 初回起動時に自動的に最寄りの都市を設定
+  const autoSetNearestCity = async () => {
+    const savedCity = localStorage.getItem("weatherCity");
+    console.log("💾 LocalStorageに保存されている地域:", savedCity || "なし");
+
+    if (!savedCity) {
+      // 初回のみ自動設定
+      console.log("🆕 初回起動: 位置情報から最寄りの都市を自動設定します");
+      const nearestCity = await getNearestCity();
+      setSelectedCity(nearestCity);
+      console.log("✅ 自動設定完了:", nearestCity);
+    } else {
+      console.log("ℹ️ 保存済みの地域を使用:", savedCity);
+    }
+  };
+
+  // 天気情報を取得（天気予報API）
+  const fetchWeather = async () => {
+    try {
+      // 更新が必要かチェック
+      const now = Date.now();
+      if (weatherData && now - lastUpdateTime < UPDATE_INTERVAL) {
+        return weatherData;
+      }
+
+      const city = getSelectedCity();
+      const cityData = cityCodes[city] || cityCodes["東京都"];
+      const cityCode = cityData.code;
+
+      // 天気予報API（気象庁データ・無料・APIキー不要）
+      const url = `https://weather.tsukumijima.net/api/forecast/city/${cityCode}`;
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`天気情報の取得に失敗しました: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // 今日の天気情報を取得
+      const today = data.forecasts[0];
+      const weather = today.telop; // 例: "晴れ"、"曇り"、"雨"
+
+      // 気温情報を取得（最高気温）
+      let temp = "--";
+      if (today.temperature.max && today.temperature.max.celsius) {
+        temp = today.temperature.max.celsius;
+      } else if (today.temperature.min && today.temperature.min.celsius) {
+        // 最高気温がない場合は最低気温を表示
+        temp = today.temperature.min.celsius;
+      }
+
+      weatherData = {
+        temp: temp,
+        icon: getWeatherIcon(weather),
+        description: weather,
+        city: city,
+      };
+
+      lastUpdateTime = now;
+      console.log("天気情報を取得しました:", weatherData);
+      return weatherData;
+    } catch (error) {
+      console.error("天気情報の取得エラー:", error);
+      // エラー時はプレースホルダーを返す
+      return {
+        temp: "--",
+        icon: "🌡️",
+        description: "取得失敗",
+      };
+    }
+  };
+
+  // 天気表示を更新
+  const updateWeatherDisplay = async () => {
+    const weatherIcon = document.getElementById("weatherIcon");
+    const weatherTemp = document.getElementById("weatherTemp");
+
+    if (!weatherIcon || !weatherTemp) {
+      console.warn("天気表示要素が見つかりません");
+      return;
+    }
+
+    try {
+      console.log("天気情報を更新中...");
+      const weather = await fetchWeather();
+
+      // HTMLアイコンを設定
+      weatherIcon.innerHTML = weather.icon;
+      weatherTemp.textContent =
+        weather.temp !== "--" ? `${weather.temp}°C` : "--°C";
+
+      console.log("天気表示を更新しました:", weather);
+    } catch (error) {
+      console.error("天気表示の更新エラー:", error);
+      // エラー時もプレースホルダーを表示
+      weatherIcon.innerHTML = '<i class="fas fa-thermometer-half"></i>';
+      weatherTemp.textContent = "--°C";
+    }
+  };
+
+  // 初期化時に自動的に最寄りの都市を設定
+  autoSetNearestCity();
+
+  // LocalStorageをリセットして再設定
+  const resetLocation = async () => {
+    console.log("🔄 地域設定をリセットします...");
+    localStorage.removeItem("weatherCity");
+    const nearestCity = await getNearestCity();
+    setSelectedCity(nearestCity);
+    await updateWeatherDisplay();
+    console.log("✅ 地域を再設定しました:", nearestCity);
+    return nearestCity;
+  };
+
+  return {
+    updateWeatherDisplay,
+    fetchWeather,
+    getSelectedCity,
+    setSelectedCity,
+    getCityCodes: () => cityCodes,
+    getNearestCity,
+    resetLocation, // デバッグ用: コンソールから WeatherManager.resetLocation() で実行可能
+  };
+})();
+
+// ===== Wake Lock管理モジュール =====
+const WakeLockManager = (() => {
+  let wakeLock = null;
+  let isEnabled = false;
+
+  // Wake Lock APIのサポート確認
+  const isSupported = () => {
+    return "wakeLock" in navigator;
+  };
+
+  // Wake Lockの取得
+  const request = async () => {
+    if (!isSupported()) {
+      console.log("Wake Lock API is not supported");
+      return false;
+    }
+
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      isEnabled = true;
+      console.log("Wake Lock activated");
+
+      // Wake Lockが解放された時のリスナー
+      wakeLock.addEventListener("release", () => {
+        console.log("Wake Lock released");
+      });
+
+      return true;
+    } catch (err) {
+      console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+      isEnabled = false;
+      return false;
+    }
+  };
+
+  // Wake Lockの解放
+  const release = async () => {
+    if (wakeLock !== null) {
+      try {
+        await wakeLock.release();
+        wakeLock = null;
+        isEnabled = false;
+        console.log("Wake Lock manually released");
+      } catch (err) {
+        console.error(`Wake Lock release error: ${err}`);
+      }
+    }
+  };
+
+  // ページの可視性変更時の処理
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === "visible" && isEnabled) {
+      // フォアグラウンドに戻った時、必要なら再取得
+      await request();
+    }
+  };
+
+  // 可視性変更イベントのリスナーを設定
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
+
+  return {
+    isSupported,
+    request,
+    release,
+    isEnabled: () => isEnabled,
+  };
+})();
+
 // ===== 共通ユーティリティ =====
 const Utils = (() => {
   // 安全な要素取得
@@ -926,7 +1321,7 @@ const TimerControl = (() => {
     }
   };
 
-  const handleTimerEnd = () => {
+  const handleTimerEnd = async () => {
     // 重複処理を防ぐ
     if (isHandlingTimerEnd) return;
     isHandlingTimerEnd = true;
@@ -1020,7 +1415,7 @@ const TimerControl = (() => {
 
       // ループなし、またはループ完了
       console.log("サーキット完了 - ループなしまたはループ完了");
-      stop();
+      await stop();
 
       // 現在時刻モードでは表示を更新しない
       if (!state.isCurrentTimeMode) {
@@ -1048,7 +1443,7 @@ const TimerControl = (() => {
     }
 
     // 通常のタイマー終了
-    stop();
+    await stop();
 
     // 現在時刻モードでは表示を更新しない
     if (!state.isCurrentTimeMode) {
@@ -1068,7 +1463,7 @@ const TimerControl = (() => {
     }, 300);
   };
 
-  const start = () => {
+  const start = async () => {
     const state = TimerState.get();
     const intervalId = setInterval(updateDisplay, INTERVAL_UPDATE_MS);
     TimerState.set({
@@ -1078,9 +1473,12 @@ const TimerControl = (() => {
     });
     updateToggleButton(true);
     updateCircuitProgress();
+
+    // Wake Lockを有効化（スリープモード防止）
+    await WakeLockManager.request();
   };
 
-  const pause = () => {
+  const pause = async () => {
     const state = TimerState.get();
     if (state.intervalId) {
       clearInterval(state.intervalId);
@@ -1098,19 +1496,25 @@ const TimerControl = (() => {
 
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
+
+    // Wake Lockを解放（スリープモード許可）
+    await WakeLockManager.release();
   };
 
-  const stop = () => {
+  const stop = async () => {
     const state = TimerState.get();
     if (state.intervalId) {
       clearInterval(state.intervalId);
     }
     TimerState.set({ isRunning: false, intervalId: null });
     updateToggleButton(false);
+
+    // Wake Lockを解放（スリープモード許可）
+    await WakeLockManager.release();
   };
 
-  const reset = () => {
-    stop();
+  const reset = async () => {
+    await stop();
     const state = TimerState.get();
 
     if (state.isStopwatch) {
@@ -1147,8 +1551,8 @@ const TimerControl = (() => {
     }
   };
 
-  const setTimer = (milliseconds) => {
-    stop();
+  const setTimer = async (milliseconds) => {
+    await stop();
     TimerState.resetCircuit();
     TimerState.set({
       countdownTime: milliseconds,
@@ -1164,9 +1568,9 @@ const TimerControl = (() => {
     hideCircuitNote();
   };
 
-  toggleButton.addEventListener("click", () => {
+  toggleButton.addEventListener("click", async () => {
     const state = TimerState.get();
-    state.isRunning ? pause() : start();
+    state.isRunning ? await pause() : await start();
   });
 
   document.getElementById("reset").addEventListener("click", reset);
@@ -1478,7 +1882,7 @@ const ModeSwitch = (() => {
     }
   };
 
-  const restoreBackgroundState = () => {
+  const restoreBackgroundState = async () => {
     if (!backgroundState.mode) return;
 
     // バックグラウンドタイマーチェックを停止（タイマー/ストップウォッチに戻るため）
@@ -1516,7 +1920,7 @@ const ModeSwitch = (() => {
 
     if (backgroundState.mode === "stopwatch") {
       // ストップウォッチモードに切り替え（shouldRestore=trueなので何もしない）
-      switchToStopwatch(true);
+      await switchToStopwatch(true);
 
       // 計算した経過時間を設定
       TimerState.set({
@@ -1532,7 +1936,7 @@ const ModeSwitch = (() => {
 
       // 実行中だった場合は再開
       if (wasRunning) {
-        TimerControl.start();
+        await TimerControl.start();
       }
     } else if (backgroundState.mode === "timer") {
       // タイマーモードに切り替え
@@ -1557,7 +1961,7 @@ const ModeSwitch = (() => {
         };
       }
 
-      switchToTimer();
+      await switchToTimer();
     }
 
     // 状態をクリア
@@ -1581,7 +1985,7 @@ const ModeSwitch = (() => {
     };
   };
 
-  const switchToStopwatch = (shouldRestore = false) => {
+  const switchToStopwatch = async (shouldRestore = false) => {
     // タイマーの状態を保存
     saveTimerState();
 
@@ -1590,7 +1994,7 @@ const ModeSwitch = (() => {
     if (prevState.intervalId) {
       clearInterval(prevState.intervalId);
     }
-    TimerControl.stop();
+    await TimerControl.stop();
 
     // ストップウォッチの保存状態があれば復元、なければ初期化
     if (stopwatchSavedState) {
@@ -1627,7 +2031,7 @@ const ModeSwitch = (() => {
 
       // 実行中だった場合は再開
       if (stopwatchSavedState.isRunning) {
-        TimerControl.start();
+        await TimerControl.start();
       }
     } else if (!shouldRestore) {
       // 保存状態がなく、復元フラグもない場合は初期化
@@ -1740,7 +2144,7 @@ const ModeSwitch = (() => {
     startBackgroundTimerCheck();
   };
 
-  const switchToTimer = (shouldRestore = false) => {
+  const switchToTimer = async (shouldRestore = false) => {
     // バックグラウンドタイマーチェックを停止
     stopBackgroundTimerCheck();
     // ストップウォッチの状態を保存
@@ -1751,7 +2155,7 @@ const ModeSwitch = (() => {
     if (prevState.intervalId) {
       clearInterval(prevState.intervalId);
     }
-    TimerControl.stop();
+    await TimerControl.stop();
 
     // タイマーの保存状態があれば復元、なければ初期化
     if (timerSavedState) {
@@ -1799,7 +2203,7 @@ const ModeSwitch = (() => {
 
       // 実行中だった場合は再開（タイマーが終了していない場合のみ）
       if (timerSavedState.isRunning && countdownTime > 0) {
-        TimerControl.start();
+        await TimerControl.start();
       }
     } else if (!shouldRestore) {
       // 保存状態がなく、復元フラグもない場合は初期化
@@ -1897,7 +2301,7 @@ const ModeSwitch = (() => {
     TimerControl.updateCircuitProgressDisplay();
   };
 
-  const updateCurrentTime = () => {
+  const updateCurrentTime = async () => {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
@@ -1916,10 +2320,13 @@ const ModeSwitch = (() => {
 
       dateText.textContent = `${month}/${date}`;
       dayText.textContent = dayName;
+
+      // 天気情報を更新（初回のみ、または30分ごと）
+      await WeatherManager.updateWeatherDisplay();
     }
   };
 
-  const switchToCurrentTime = () => {
+  const switchToCurrentTime = async () => {
     // 既存のインターバルをクリア
     if (currentTimeInterval) {
       clearInterval(currentTimeInterval);
@@ -1984,8 +2391,8 @@ const ModeSwitch = (() => {
     // メモ表示を非表示
     hideCircuitNote();
 
-    // 時刻を表示
-    updateCurrentTime();
+    // 時刻を表示（天気情報も含む）
+    await updateCurrentTime();
 
     // 1分ごとに時刻を更新
     currentTimeInterval = setInterval(updateCurrentTime, 60000);
@@ -2021,12 +2428,12 @@ const ModeSwitch = (() => {
     }
   };
 
-  stopwatchButton.addEventListener("click", () => {
+  stopwatchButton.addEventListener("click", async () => {
     stopCurrentTime();
 
     // 現在時刻モードからストップウォッチモードに復元する場合
     if (backgroundState.mode === "stopwatch") {
-      restoreBackgroundState();
+      await restoreBackgroundState();
     } else {
       // バックグラウンド状態をクリア（別のモードから来た場合）
       backgroundState = {
@@ -2048,16 +2455,16 @@ const ModeSwitch = (() => {
         circuitCurrentLoopCount: 1,
       };
       // ストップウォッチモードに切り替え（状態を保持）
-      switchToStopwatch();
+      await switchToStopwatch();
     }
   });
 
-  timerButton.addEventListener("click", () => {
+  timerButton.addEventListener("click", async () => {
     stopCurrentTime();
 
     // 現在時刻モードからタイマーモードに復元する場合
     if (backgroundState.mode === "timer") {
-      restoreBackgroundState();
+      await restoreBackgroundState();
     } else {
       // バックグラウンド状態をクリア（別のモードから来た場合）
       backgroundState = {
@@ -2079,13 +2486,13 @@ const ModeSwitch = (() => {
         circuitCurrentLoopCount: 1,
       };
       // タイマーモードに切り替え（状態を保持）
-      switchToTimer();
+      await switchToTimer();
     }
   });
   if (currentTimeButton) {
-    currentTimeButton.addEventListener("click", () => {
+    currentTimeButton.addEventListener("click", async () => {
       stopCurrentTime();
-      switchToCurrentTime();
+      await switchToCurrentTime();
     });
   }
 
@@ -3122,9 +3529,9 @@ const CircuitFeature = (() => {
       const button = document.createElement("button");
       button.className = "btn";
       button.textContent = circuit.name;
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         TimerState.set({ isStopwatch: false });
-        TimerControl.stop();
+        await TimerControl.stop();
         document.querySelectorAll("#timerOptions button").forEach((btn) => {
           btn.classList.remove("active");
         });
@@ -3675,7 +4082,7 @@ const CircuitFeature = (() => {
     });
   }
   if (nameOkButton) {
-    nameOkButton.addEventListener("click", () => {
+    nameOkButton.addEventListener("click", async () => {
       const name = (nameInput.value || "").trim();
       const steps = pendingSteps || [];
 
@@ -3700,7 +4107,7 @@ const CircuitFeature = (() => {
 
       TimerState.startCircuit(circuit);
       TimerState.set({ isStopwatch: false });
-      TimerControl.stop();
+      await TimerControl.stop();
 
       document.querySelectorAll("#timerOptions button").forEach((btn) => {
         btn.classList.remove("active");

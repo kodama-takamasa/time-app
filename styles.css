@@ -302,6 +302,39 @@ body {
   letter-spacing: 0.15em;
 }
 
+.weather-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 16px;
+  border-left: 3px solid var(--bg);
+  position: relative;
+  z-index: 1;
+}
+
+.weather-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  color: var(--bg);
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+}
+
+.weather-icon i {
+  color: var(--bg);
+}
+
+.weather-temp {
+  font-family: "Orbitron", "Courier New", monospace;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--bg);
+  letter-spacing: 0.05em;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
 /* レスポンシブ調整 */
 @media (max-width: 768px) {
   .date-info {
@@ -319,6 +352,24 @@ body {
     padding-left: 14px;
     border-left-width: 2.5px;
     letter-spacing: 0.12em;
+  }
+
+  .weather-info {
+    gap: 6px;
+    padding-left: 14px;
+    border-left-width: 2.5px;
+  }
+
+  .weather-icon {
+    font-size: 1.4rem;
+  }
+
+  .weather-icon i {
+    font-size: 1.4rem;
+  }
+
+  .weather-temp {
+    font-size: 1.2rem;
   }
 }
 
@@ -338,6 +389,24 @@ body {
     padding-left: 12px;
     border-left-width: 2px;
     letter-spacing: 0.1em;
+  }
+
+  .weather-info {
+    gap: 5px;
+    padding-left: 12px;
+    border-left-width: 2px;
+  }
+
+  .weather-icon {
+    font-size: 1.2rem;
+  }
+
+  .weather-icon i {
+    font-size: 1.2rem;
+  }
+
+  .weather-temp {
+    font-size: 1rem;
   }
 }
 
