@@ -491,6 +491,44 @@ const WakeLockManager = (() => {
   };
 })();
 
+// ===== トーストメッセージ表示 =====
+const Toast = (() => {
+  const toastElement = document.getElementById("toastMessage");
+  const toastText = document.getElementById("toastText");
+  let hideTimeout = null;
+
+  const show = (message, duration = 1000) => {
+    if (!toastElement || !toastText) {
+      console.warn("トーストメッセージ要素が見つかりません");
+      return;
+    }
+
+    // 既存のタイムアウトをクリア
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
+
+    // メッセージを設定して表示
+    toastText.textContent = message;
+    toastElement.style.display = "block";
+    
+    // アニメーション用に少し遅延
+    setTimeout(() => {
+      toastElement.classList.add("show");
+    }, 10);
+
+    // 指定時間後に非表示
+    hideTimeout = setTimeout(() => {
+      toastElement.classList.remove("show");
+      setTimeout(() => {
+        toastElement.style.display = "none";
+      }, 300); // アニメーション完了を待つ
+    }, duration);
+  };
+
+  return { show };
+})();
+
 // ===== 共通ユーティリティ =====
 const Utils = (() => {
   // 安全な要素取得
@@ -2617,6 +2655,9 @@ const MinimalMode = (() => {
       // ミニマルモードに切り替え
       body.classList.add("minimal-mode");
       toggleButton.setAttribute("aria-label", "通常モードに戻る");
+      
+      // トーストメッセージを表示
+      Toast.show("ミニマルモード ON", 1000);
 
       // サイドメニューが開いている場合は閉じる
       const sideMenu = document.getElementById("sideMenu");
@@ -2686,6 +2727,9 @@ const MinimalMode = (() => {
       // 通常モードに戻る
       body.classList.remove("minimal-mode");
       toggleButton.setAttribute("aria-label", "ミニマルモード切り替え");
+      
+      // トーストメッセージを表示
+      Toast.show("ミニマルモード OFF", 1000);
 
       // フルスクリーンモードを解除
       try {
@@ -2740,17 +2784,20 @@ const SleepToggle = (() => {
   // スリープ防止の状態を更新
   const updateUI = () => {
     if (!sleepIcon || !toggleButton) return;
-    
+
     if (isSleepPrevented) {
       sleepIcon.className = "fas fa-sun"; // 太陽アイコン（スリープ防止ON）
       toggleButton.setAttribute("aria-label", "スリープ防止をOFF");
-      toggleButton.style.background = "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6)";
+      toggleButton.style.background =
+        "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6)";
       toggleButton.style.color = "var(--bg)";
     } else {
       sleepIcon.className = "fas fa-moon"; // 月アイコン（スリープ防止OFF）
       toggleButton.setAttribute("aria-label", "スリープ防止をON");
-      toggleButton.style.background = "rgba(var(--menu-bg-r, 17), var(--menu-bg-g, 17), var(--menu-bg-b, 17), 0.3)";
-      toggleButton.style.color = "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5)";
+      toggleButton.style.background =
+        "rgba(var(--menu-bg-r, 17), var(--menu-bg-g, 17), var(--menu-bg-b, 17), 0.3)";
+      toggleButton.style.color =
+        "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5)";
     }
   };
 
@@ -2764,15 +2811,18 @@ const SleepToggle = (() => {
       if (success) {
         console.log("✅ スリープ防止: ON");
         localStorage.setItem("sleepPreventionEnabled", "true");
+        Toast.show("スリープ防止 ON", 1000);
       } else {
         console.warn("⚠️ スリープ防止の有効化に失敗しました");
         isSleepPrevented = false; // 失敗した場合は状態を戻す
+        Toast.show("スリープ防止の有効化失敗", 1500);
       }
     } else {
       // スリープ防止をOFF
       await WakeLockManager.release();
       console.log("✅ スリープ防止: OFF（通常のスリープモードに戻ります）");
       localStorage.setItem("sleepPreventionEnabled", "false");
+      Toast.show("スリープ防止 OFF", 1000);
     }
 
     updateUI();
@@ -2788,11 +2838,11 @@ const SleepToggle = (() => {
     // スマホのみ表示
     if (isMobile()) {
       toggleButton.style.display = "block";
-      
+
       // LocalStorageから前回の状態を復元（デフォルトはOFF）
       const savedState = localStorage.getItem("sleepPreventionEnabled");
       isSleepPrevented = savedState === "true";
-      
+
       if (isSleepPrevented) {
         // 前回ONだった場合は再度有効化
         console.log("♻️ 前回の設定を復元: スリープ防止ON");
@@ -2802,7 +2852,7 @@ const SleepToggle = (() => {
         console.log("🌙 デフォルト設定: スリープ防止OFF（スリープモード有効）");
         await WakeLockManager.release();
       }
-      
+
       updateUI();
       toggleButton.addEventListener("click", toggle);
       console.log("📱 スリープ切り替えボタンを有効化しました");

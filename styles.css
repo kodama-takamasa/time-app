@@ -1106,6 +1106,32 @@ body {
   left: 64px !important; /* ミニマルモードボタンの右側（40px + 16px間隔 + 8px） */
 }
 
+/* トーストメッセージ */
+.toast-message {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.95);
+  color: var(--bg);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.4);
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+
+.toast-message.show {
+  opacity: 1;
+}
+
 /* ストップウォッチモードではメニューボタンを非表示 */
 body.stopwatch-mode .menu-toggle {
   display: none !important;
@@ -1147,10 +1173,7 @@ body.minimal-mode .minimal-toggle {
   border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
 }
 
-/* ミニマルモード時でもスリープボタンは独立して動作 */
-body.minimal-mode .sleep-toggle {
-  /* スリープボタンの状態は保持（ミニマルモードに影響されない） */
-}
+/* ミニマルモード時でもスリープボタンは独立して動作（状態は保持） */
 
 /* ミニマルモード時：表示を中央に配置（サイズは継承） */
 body.minimal-mode .center-display {
