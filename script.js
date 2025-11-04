@@ -460,9 +460,12 @@ const WakeLockManager = (() => {
   // ページの可視性変更時の処理
   const handleVisibilityChange = async () => {
     if (document.visibilityState === "visible" && isEnabled) {
-      console.log("📱 フォアグラウンドに復帰: スリープ防止を再有効化");
-      // フォアグラウンドに戻った時、必要なら再取得
+      console.log("📱 フォアグラウンドに復帰: スリープ防止を再有効化中...");
+      // フォアグラウンドに戻った時、スリープ防止がONならば再取得
+      // （バックグラウンド移行時に自動解放されるため）
       await request();
+    } else if (document.visibilityState === "hidden" && isEnabled) {
+      console.log("📱 バックグラウンドに移行: Wake Lockは自動解放されます");
     }
   };
 
@@ -470,6 +473,15 @@ const WakeLockManager = (() => {
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", handleVisibilityChange);
   }
+
+  // ページロード時にWake Lockを確実にOFFにする
+  const ensureDisabledOnLoad = async () => {
+    console.log("🔓 ページロード時: Wake Lockを確実にOFFにします");
+    await release();
+  };
+
+  // 初期化時に実行
+  ensureDisabledOnLoad();
 
   return {
     isSupported: isWakeLockSupported,
@@ -2719,20 +2731,26 @@ const SleepToggle = (() => {
 
   // スマホかどうかを判定
   const isMobile = () => {
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-           (window.innerWidth <= 768);
+    return (
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      window.innerWidth <= 768
+    );
   };
 
   // スリープ防止の状態を更新
   const updateUI = () => {
-    if (sleepIcon) {
-      if (isSleepPrevented) {
-        sleepIcon.className = "fas fa-sun"; // 太陽アイコン（スリープ防止ON）
-        toggleButton.setAttribute("aria-label", "スリープ防止をOFF");
-      } else {
-        sleepIcon.className = "fas fa-moon"; // 月アイコン（スリープ防止OFF）
-        toggleButton.setAttribute("aria-label", "スリープ防止をON");
-      }
+    if (!sleepIcon || !toggleButton) return;
+    
+    if (isSleepPrevented) {
+      sleepIcon.className = "fas fa-sun"; // 太陽アイコン（スリープ防止ON）
+      toggleButton.setAttribute("aria-label", "スリープ防止をOFF");
+      toggleButton.style.background = "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6)";
+      toggleButton.style.color = "var(--bg)";
+    } else {
+      sleepIcon.className = "fas fa-moon"; // 月アイコン（スリープ防止OFF）
+      toggleButton.setAttribute("aria-label", "スリープ防止をON");
+      toggleButton.style.background = "rgba(var(--menu-bg-r, 17), var(--menu-bg-g, 17), var(--menu-bg-b, 17), 0.3)";
+      toggleButton.style.color = "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5)";
     }
   };
 
@@ -2745,6 +2763,7 @@ const SleepToggle = (() => {
       const success = await WakeLockManager.request();
       if (success) {
         console.log("✅ スリープ防止: ON");
+        localStorage.setItem("sleepPreventionEnabled", "true");
       } else {
         console.warn("⚠️ スリープ防止の有効化に失敗しました");
         isSleepPrevented = false; // 失敗した場合は状態を戻す
@@ -2752,14 +2771,15 @@ const SleepToggle = (() => {
     } else {
       // スリープ防止をOFF
       await WakeLockManager.release();
-      console.log("✅ スリープ防止: OFF");
+      console.log("✅ スリープ防止: OFF（通常のスリープモードに戻ります）");
+      localStorage.setItem("sleepPreventionEnabled", "false");
     }
 
     updateUI();
   };
 
   // 初期化
-  const init = () => {
+  const init = async () => {
     if (!toggleButton || !sleepIcon) {
       console.warn("スリープ切り替えボタンが見つかりません");
       return;
@@ -2768,11 +2788,28 @@ const SleepToggle = (() => {
     // スマホのみ表示
     if (isMobile()) {
       toggleButton.style.display = "block";
+      
+      // LocalStorageから前回の状態を復元（デフォルトはOFF）
+      const savedState = localStorage.getItem("sleepPreventionEnabled");
+      isSleepPrevented = savedState === "true";
+      
+      if (isSleepPrevented) {
+        // 前回ONだった場合は再度有効化
+        console.log("♻️ 前回の設定を復元: スリープ防止ON");
+        await WakeLockManager.request();
+      } else {
+        // デフォルトまたは前回OFFだった場合は確実にOFF
+        console.log("🌙 デフォルト設定: スリープ防止OFF（スリープモード有効）");
+        await WakeLockManager.release();
+      }
+      
       updateUI();
       toggleButton.addEventListener("click", toggle);
       console.log("📱 スリープ切り替えボタンを有効化しました");
     } else {
       toggleButton.style.display = "none";
+      // デスクトップでも確実にOFF
+      await WakeLockManager.release();
       console.log("💻 デスクトップ環境: スリープ切り替えボタンを非表示");
     }
   };

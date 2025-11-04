@@ -1147,6 +1147,11 @@ body.minimal-mode .minimal-toggle {
   border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
 }
 
+/* ミニマルモード時でもスリープボタンは独立して動作 */
+body.minimal-mode .sleep-toggle {
+  /* スリープボタンの状態は保持（ミニマルモードに影響されない） */
+}
+
 /* ミニマルモード時：表示を中央に配置（サイズは継承） */
 body.minimal-mode .center-display {
   height: 100vh !important;
