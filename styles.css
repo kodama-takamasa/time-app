@@ -1167,13 +1167,12 @@ body.minimal-mode .controls {
   display: none !important;
 }
 
-body.minimal-mode .minimal-toggle {
+/* ミニマルモード時はミニマルボタンのみアクティブ表示（スリープボタンは除外） */
+body.minimal-mode #minimalToggle {
   background: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.7) !important;
   color: var(--bg) !important;
   border-color: rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8) !important;
 }
-
-/* ミニマルモード時でもスリープボタンは独立して動作（状態は保持） */
 
 /* ミニマルモード時：表示を中央に配置（サイズは継承） */
 body.minimal-mode .center-display {

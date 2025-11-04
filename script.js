@@ -511,7 +511,7 @@ const Toast = (() => {
     // メッセージを設定して表示
     toastText.textContent = message;
     toastElement.style.display = "block";
-    
+
     // アニメーション用に少し遅延
     setTimeout(() => {
       toastElement.classList.add("show");
@@ -2655,7 +2655,7 @@ const MinimalMode = (() => {
       // ミニマルモードに切り替え
       body.classList.add("minimal-mode");
       toggleButton.setAttribute("aria-label", "通常モードに戻る");
-      
+
       // トーストメッセージを表示
       Toast.show("ミニマルモード ON", 1000);
 
@@ -2727,7 +2727,7 @@ const MinimalMode = (() => {
       // 通常モードに戻る
       body.classList.remove("minimal-mode");
       toggleButton.setAttribute("aria-label", "ミニマルモード切り替え");
-      
+
       // トーストメッセージを表示
       Toast.show("ミニマルモード OFF", 1000);
 
@@ -2788,16 +2788,15 @@ const SleepToggle = (() => {
     if (isSleepPrevented) {
       sleepIcon.className = "fas fa-sun"; // 太陽アイコン（スリープ防止ON）
       toggleButton.setAttribute("aria-label", "スリープ防止をOFF");
-      toggleButton.style.background =
-        "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6)";
-      toggleButton.style.color = "var(--bg)";
+      toggleButton.style.setProperty("background", "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.6)", "important");
+      toggleButton.style.setProperty("color", "var(--bg)", "important");
+      toggleButton.style.setProperty("border-color", "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.8)", "important");
     } else {
       sleepIcon.className = "fas fa-moon"; // 月アイコン（スリープ防止OFF）
       toggleButton.setAttribute("aria-label", "スリープ防止をON");
-      toggleButton.style.background =
-        "rgba(var(--menu-bg-r, 17), var(--menu-bg-g, 17), var(--menu-bg-b, 17), 0.3)";
-      toggleButton.style.color =
-        "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5)";
+      toggleButton.style.setProperty("background", "rgba(var(--menu-bg-r, 17), var(--menu-bg-g, 17), var(--menu-bg-b, 17), 0.3)", "important");
+      toggleButton.style.setProperty("color", "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.5)", "important");
+      toggleButton.style.setProperty("border-color", "rgba(var(--fg-r), var(--fg-g), var(--fg-b), 0.3)", "important");
     }
   };
 
